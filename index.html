@@ -129,6 +129,7 @@
     <button id="flightModeButton" type="button">Flight Mode</button>
     <button id="savedFlights" type="button">Saved Flights</button>
     <button id="practiceFlights" type="button">Practice Flights</button>
+    <button id="statistics" type="button">Statistics</button>
     <button id="advanced" type="button">Advanced</button>
     <button id="logout" type="button">Log Out</button>
   </div>
@@ -199,6 +200,11 @@
     </div>
 
     <div id="advancedList"></div>
+  </section>
+
+  <section class="panel flight-timer-panel">
+    <div class="flight-timer-label">Flight Time</div>
+    <strong id="flightTimer">00:00:00</strong>
   </section>
 
   <section class="panel">
@@ -318,6 +324,19 @@
       Close
     </button>
   </div>
+</dialog>
+
+<dialog id="statisticsDialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Flight Statistics</h2>
+      <p>Your completed flight statistics.</p>
+    </div>
+
+    <button id="closeStatistics" type="button" class="small-button">Close</button>
+  </div>
+
+  <div id="statisticsContent"></div>
 </dialog>
 
 <dialog id="dialog">
