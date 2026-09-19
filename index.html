@@ -47,10 +47,33 @@
     <h1>Create account</h1>
     <p>Create an account to keep your checklist separate from other users.</p>
 
+    <div class="account-policy">
+      <strong>Important account information</strong>
+
+      <p>
+        Accounts are automatically deleted after
+        <strong>6 months of inactivity.</strong>
+      </p>
+
+      <p>
+        To keep your account and saved flight data, you must log in at least
+        once every 6 months.
+      </p>
+    </div>
+
     <form id="registerForm">
       <input id="regEmail" type="email" placeholder="Email" autocomplete="email" required>
       <input id="regPassword" type="password" placeholder="Password, 8+ characters" minlength="8" autocomplete="new-password" required>
       <input id="regConfirm" type="password" placeholder="Confirm password" minlength="8" autocomplete="new-password" required>
+
+      <label class="account-policy-confirm">
+        <input id="inactivityAgreement" type="checkbox" required>
+        <span>
+          I understand that my account will be automatically deleted after
+          6 months of inactivity.
+        </span>
+      </label>
+
       <button type="submit">Create Account</button>
     </form>
 
