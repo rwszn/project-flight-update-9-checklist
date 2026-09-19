@@ -343,6 +343,32 @@ function updateFlightTimer() {
   $("flightTimer").textContent = formatTimer(seconds);
 }
 
+function updateStartFlightButtons() {
+  const active = Boolean(flightStartedAt) && !state.finishedAt;
+  const buttons = [$("startFlight"), $("timerStartFlight")].filter(Boolean);
+
+  buttons.forEach(button => {
+    button.textContent = active ? "Flight Started" : "Start Flight";
+    button.disabled = active || Boolean(state.finishedAt);
+  });
+}
+
+function startFlight() {
+  if (currentMode === "practice" || flightStartedAt || state.finishedAt) {
+    return;
+  }
+
+  flightStartedAt = Date.now();
+  state.startedAt = new Date(flightStartedAt).toISOString();
+  state.finishedAt = null;
+  state.durationSeconds = null;
+  completionSummary = null;
+
+  save();
+  updateStartFlightButtons();
+  startFlightTimer();
+}
+
 function startFlightTimer() {
   clearInterval(flightTimerInterval);
   updateFlightTimer();
@@ -353,6 +379,7 @@ function stopFlightTimer() {
   clearInterval(flightTimerInterval);
   flightTimerInterval = null;
   updateFlightTimer();
+  updateStartFlightButtons();
 }
 
 function savePracticeState() {
@@ -600,10 +627,21 @@ function load() {
   currentMode = state.mode || "full";
 
   flightStartedAt =
-    state.startedAt ||
-    Date.now();
+    state.startedAt
+      ? Date.parse(state.startedAt)
+      : null;
 
-  startFlightTimer();
+  if (state.finishedAt) {
+    flightStartedAt = null;
+  }
+
+  if (flightStartedAt) {
+    startFlightTimer();
+  } else {
+    stopFlightTimer();
+  }
+
+  updateStartFlightButtons();
 
   try {
     const active = JSON.parse(
@@ -1696,7 +1734,8 @@ function getNormalCounts() {
 function completeNormalFlight() {
   if (
     currentMode === "practice" ||
-    completionSummary
+    completionSummary ||
+    !flightStartedAt
   ) {
     return;
   }
@@ -2018,10 +2057,6 @@ function renderSavedFlights() {
           )
         );
 
-      flightStartedAt =
-        state.startedAt ||
-        Date.now();
-
       currentMode =
         state.mode ||
         "full";
@@ -2030,10 +2065,21 @@ function renderSavedFlights() {
         null;
 
       flightStartedAt =
-        Date.now();
+        state.finishedAt
+          ? null
+          : (state.startedAt
+              ? Date.parse(state.startedAt)
+              : null);
 
       save();
-      startFlightTimer();
+
+      if (flightStartedAt) {
+        startFlightTimer();
+      } else {
+        stopFlightTimer();
+      }
+
+      updateStartFlightButtons();
       applyMode(true);
 
       $("savedDialog").close();
@@ -2502,6 +2548,43 @@ $("notes").oninput =
    SAVED FLIGHTS
 ========================= */
 
+$("menuButton").onclick =
+  () => {
+    $("menuDialog").showModal();
+  };
+
+$("closeMenu").onclick =
+  () => {
+    $("menuDialog").close();
+  };
+
+$("menuSavedFlights").onclick =
+  () => {
+    $("menuDialog").close();
+    $("savedFlights").click();
+  };
+
+$("menuPracticeFlights").onclick =
+  () => {
+    $("menuDialog").close();
+    $("practiceFlights").click();
+  };
+
+$("menuStatistics").onclick =
+  () => {
+    $("menuDialog").close();
+    $("statistics").click();
+  };
+
+$("menuAdvanced").onclick =
+  () => {
+    $("menuDialog").close();
+    $("advanced").click();
+  };
+
+$("startFlight").onclick = startFlight;
+$("timerStartFlight").onclick = startFlight;
+
 $("savedFlights").onclick =
   () => {
     renderSavedFlights();
@@ -2644,8 +2727,8 @@ $("confirm").onclick =
       durationSeconds: null
     };
 
-    flightStartedAt = state.startedAt;
-    startFlightTimer();
+    flightStartedAt = null;
+    stopFlightTimer();
 
     practiceState = {
       selected: [],
@@ -2658,9 +2741,10 @@ $("confirm").onclick =
 
     activePracticeId = null;
     completionSummary = null;
-    flightStartedAt = Date.now();
+    flightStartedAt = null;
 
     save();
+    updateStartFlightButtons();
     savePracticeState();
 
     advancedOpen = false;
@@ -2695,7 +2779,7 @@ $("confirm").onclick =
 ========================= */
 
 async function init() {
-  flightStartedAt = Date.now();
+  flightStartedAt = null;
 
   if (!sb) {
     msg(
