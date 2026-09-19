@@ -2408,6 +2408,8 @@ function renderFlightStatistics() {
 
 $("termsLink").onclick = () => openPolicyDialog("termsDialog");
 $("privacyLink").onclick = () => openPolicyDialog("privacyDialog");
+$("registerTermsLink").onclick = () => openPolicyDialog("termsDialog");
+$("registerPrivacyLink").onclick = () => openPolicyDialog("privacyDialog");
 $("cookiesLink").onclick = () => openPolicyDialog("cookiesDialog");
 
 $("cookieSettingsLink").onclick = () => {
