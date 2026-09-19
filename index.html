@@ -1,27 +1,47 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Project Flight Update 9 Checklist</title>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5NQVYQRH8H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5NQVYQRH8H');
+</script>
+
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
 <div id="auth" class="auth">
   <div class="auth-card">
     <b class="logo">PF</b>
     <h1>Project Flight Update 9</h1>
     <p>Sign in to your flight checklist.</p>
+
     <form id="login">
       <input id="email" type="email" placeholder="Email" required>
       <input id="password" type="password" placeholder="Password" required>
       <button>Log In</button>
     </form>
+
     <div class="links">
       <button id="register" type="button">Create account</button>
       <button id="forgot" type="button">Forgot password?</button>
     </div>
-    <button id="guest" type="button" class="secondary">Continue as Guest</button>
+
+    <button id="guest" type="button" class="secondary">
+      Continue as Guest
+    </button>
+
     <p id="message"></p>
   </div>
 </div>
@@ -30,13 +50,30 @@
   <div class="auth-card">
     <b class="logo">PF</b>
     <h1>Create account</h1>
+
     <form id="registerForm">
       <input id="regEmail" type="email" placeholder="Email" required>
-      <input id="regPassword" type="password" placeholder="Password, 8+ characters" minlength="8" required>
-      <input id="regConfirm" type="password" placeholder="Confirm password" minlength="8" required>
+      <input
+        id="regPassword"
+        type="password"
+        placeholder="Password, 8+ characters"
+        minlength="8"
+        required
+      >
+      <input
+        id="regConfirm"
+        type="password"
+        placeholder="Confirm password"
+        minlength="8"
+        required
+      >
       <button>Create Account</button>
     </form>
-    <button id="backRegister" class="link" type="button">Back to login</button>
+
+    <button id="backRegister" class="link" type="button">
+      Back to login
+    </button>
+
     <p id="registerMessage"></p>
   </div>
 </div>
@@ -46,11 +83,16 @@
     <b class="logo">PF</b>
     <h1>Reset password</h1>
     <p>Enter your email and we will send a reset link.</p>
+
     <form id="forgotForm">
       <input id="forgotEmail" type="email" placeholder="Email" required>
       <button>Send Reset Email</button>
     </form>
-    <button id="backForgot" class="link" type="button">Back to login</button>
+
+    <button id="backForgot" class="link" type="button">
+      Back to login
+    </button>
+
     <p id="forgotMessage"></p>
   </div>
 </div>
@@ -59,25 +101,56 @@
   <div class="auth-card">
     <b class="logo">PF</b>
     <h1>Choose a new password</h1>
+
     <form id="recoveryForm">
-      <input id="newPassword" type="password" placeholder="New password" minlength="8" required>
-      <input id="newConfirm" type="password" placeholder="Confirm password" minlength="8" required>
+      <input
+        id="newPassword"
+        type="password"
+        placeholder="New password"
+        minlength="8"
+        required
+      >
+      <input
+        id="newConfirm"
+        type="password"
+        placeholder="Confirm password"
+        minlength="8"
+        required
+      >
       <button>Update Password</button>
     </form>
+
     <p id="recoveryMessage"></p>
   </div>
 </div>
 
 <main id="app" class="hidden">
+
 <header>
-  <div class="brand"><b>PF</b><span>Project Flight Update 9<small>Flight Checklist</small></span></div>
-  <div><span id="account"></span><button id="advanced">Advanced</button><button id="logout">Log Out</button></div>
+  <div class="brand">
+    <b>PF</b>
+    <span>
+      Project Flight Update 9
+      <small>Flight Checklist</small>
+    </span>
+  </div>
+
+  <div>
+    <span id="account"></span>
+    <button id="advanced">Advanced</button>
+    <button id="logout">Log Out</button>
+  </div>
 </header>
+
 <div class="wrap">
-  <div class="warning">This checklist is for Project Flight Update 9 and is not suitable for every aircraft. Aircraft controls and available features can vary.</div>
+
+  <div class="warning">
+    This checklist is for Project Flight Update 9 and is not suitable for every aircraft. Aircraft controls and available features can vary.
+  </div>
 
   <section class="panel">
     <h2>Flight Information</h2>
+
     <div class="info">
       <input id="aircraft" placeholder="Aircraft">
       <input id="flight" placeholder="Flight">
@@ -93,25 +166,44 @@
   </section>
 
   <section class="panel">
-    <div class="progress"><span>Checklist Progress</span><b id="percent">0%</b></div>
-    <div class="bar"><i id="bar"></i></div>
+    <div class="progress">
+      <span>Checklist Progress</span>
+      <b id="percent">0%</b>
+    </div>
+
+    <div class="bar">
+      <i id="bar"></i>
+    </div>
+
     <small id="count">0 of 0 complete</small>
   </section>
 
   <div id="checklist"></div>
-  <button id="reset" class="danger">End Flight / Reset</button>
+
+  <button id="reset" class="danger">
+    End Flight / Reset
+  </button>
+
 </div>
 </main>
 
 <dialog id="dialog">
   <h2>End Flight / Reset?</h2>
-  <p>This will clear the current checklist and flight information.</p>
+
+  <p>
+    This will clear the current checklist and flight information.
+  </p>
+
   <button id="cancel">Cancel</button>
-  <button id="confirm" class="danger">Confirm Reset</button>
+  <button id="confirm" class="danger">
+    Confirm Reset
+  </button>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
+```
