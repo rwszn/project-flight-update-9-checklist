@@ -5,13 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Project Flight Update 9 Checklist</title>
 
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-5NQVYQRH8H"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-5NQVYQRH8H');
 </script>
 
@@ -37,9 +35,7 @@
       <button id="forgot" type="button" class="link">Forgot password?</button>
     </div>
 
-    <button id="guest" type="button" class="secondary">
-      Continue as Guest
-    </button>
+    <button id="guest" type="button" class="secondary">Continue as Guest</button>
 
     <p id="message"></p>
   </div>
@@ -53,29 +49,12 @@
 
     <form id="registerForm">
       <input id="regEmail" type="email" placeholder="Email" autocomplete="email" required>
-      <input
-        id="regPassword"
-        type="password"
-        placeholder="Password, 8+ characters"
-        minlength="8"
-        autocomplete="new-password"
-        required
-      >
-      <input
-        id="regConfirm"
-        type="password"
-        placeholder="Confirm password"
-        minlength="8"
-        autocomplete="new-password"
-        required
-      >
+      <input id="regPassword" type="password" placeholder="Password, 8+ characters" minlength="8" autocomplete="new-password" required>
+      <input id="regConfirm" type="password" placeholder="Confirm password" minlength="8" autocomplete="new-password" required>
       <button type="submit">Create Account</button>
     </form>
 
-    <button id="backRegister" class="link" type="button">
-      Back to login
-    </button>
-
+    <button id="backRegister" class="link" type="button">Back to login</button>
     <p id="registerMessage"></p>
   </div>
 </div>
@@ -91,10 +70,7 @@
       <button type="submit">Send Reset Email</button>
     </form>
 
-    <button id="backForgot" class="link" type="button">
-      Back to login
-    </button>
-
+    <button id="backForgot" class="link" type="button">Back to login</button>
     <p id="forgotMessage"></p>
   </div>
 </div>
@@ -105,22 +81,8 @@
     <h1>Choose a new password</h1>
 
     <form id="recoveryForm">
-      <input
-        id="newPassword"
-        type="password"
-        placeholder="New password"
-        minlength="8"
-        autocomplete="new-password"
-        required
-      >
-      <input
-        id="newConfirm"
-        type="password"
-        placeholder="Confirm password"
-        minlength="8"
-        autocomplete="new-password"
-        required
-      >
+      <input id="newPassword" type="password" placeholder="New password" minlength="8" autocomplete="new-password" required>
+      <input id="newConfirm" type="password" placeholder="Confirm password" minlength="8" autocomplete="new-password" required>
       <button type="submit">Update Password</button>
     </form>
 
@@ -141,7 +103,9 @@
 
   <div class="header-actions">
     <span id="account"></span>
+    <button id="flightModeButton" type="button">Flight Mode</button>
     <button id="savedFlights" type="button">Saved Flights</button>
+    <button id="practiceFlights" type="button">Practice Flights</button>
     <button id="advanced" type="button">Advanced</button>
     <button id="logout" type="button">Log Out</button>
   </div>
@@ -152,6 +116,24 @@
   <div class="warning">
     This checklist is for Project Flight Update 9 and is not suitable for every aircraft. Aircraft controls and available features can vary.
   </div>
+
+  <section class="panel mode-panel">
+    <div class="mode-header">
+      <div>
+        <h2 id="modeTitle">Full Flight</h2>
+        <p id="modeDescription" class="panel-subtitle">
+          Full checklist with Flight Information, Notes and optional Advanced Controls.
+        </p>
+      </div>
+      <span id="modeLabel" class="mode-label">Full Flight</span>
+    </div>
+
+    <div class="mode-buttons">
+      <button id="quickMode" type="button">Quick Flight</button>
+      <button id="fullMode" type="button" class="active-mode">Full Flight</button>
+      <button id="practiceMode" type="button">Practice Flight</button>
+    </div>
+  </section>
 
   <section class="panel flight-info-panel">
     <div class="panel-heading">
@@ -181,11 +163,7 @@
         </div>
       </div>
 
-      <textarea
-        id="notes"
-        rows="7"
-        placeholder="Write your notes here..."
-      ></textarea>
+      <textarea id="notes" rows="7" placeholder="Write your notes here..."></textarea>
     </div>
   </section>
 
@@ -215,12 +193,51 @@
 
   <div id="checklist"></div>
 
+  <section id="practiceBuilder" class="panel hidden">
+    <div class="panel-heading">
+      <div>
+        <h2>Create Practice Flight</h2>
+        <p class="panel-subtitle">
+          Choose exactly which maneuvers you want to practise.
+        </p>
+      </div>
+    </div>
+
+    <div id="practiceOptions"></div>
+
+    <div class="practice-builder-actions">
+      <span id="practiceSelectedCount">0 selected</span>
+      <button id="startPractice" type="button" class="save-button">
+        Start Practice Flight
+      </button>
+    </div>
+  </section>
+
+  <section id="practiceChecklistPanel" class="hidden">
+    <section class="panel practice-active-panel">
+      <div class="panel-heading">
+        <div>
+          <h2 id="practiceTitle">Practice Flight</h2>
+          <p id="practiceSubtitle" class="panel-subtitle">
+            Complete the selected practice maneuvers.
+          </p>
+        </div>
+
+        <button id="editPractice" type="button" class="small-button">
+          Edit Practice
+        </button>
+      </div>
+
+      <div id="practiceChecklist"></div>
+    </section>
+  </section>
+
   <div class="bottom-actions">
     <button id="saveFlight" type="button" class="save-button">
       Save Flight
     </button>
 
-    <button id="reset" type="button" class="danger">
+    <button id="endFlight" type="button" class="danger">
       End Flight / Reset
     </button>
   </div>
@@ -239,12 +256,45 @@
       <p>Open a saved flight to restore its checklist and notes.</p>
     </div>
 
-    <button id="closeSaved" type="button" class="small-button">
-      Close
-    </button>
+    <button id="closeSaved" type="button" class="small-button">Close</button>
   </div>
 
   <div id="savedList" class="saved-list"></div>
+</dialog>
+
+<dialog id="practiceDialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Practice Flights</h2>
+      <p>Saved practice flights are separate from normal saved flights.</p>
+    </div>
+
+    <button id="closePracticeDialog" type="button" class="small-button">Close</button>
+  </div>
+
+  <div id="practiceSavedList" class="saved-list"></div>
+</dialog>
+
+<dialog id="summaryDialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Flight Complete</h2>
+      <p>Your flight summary is ready.</p>
+    </div>
+
+    <button id="closeSummary" type="button" class="small-button">Close</button>
+  </div>
+
+  <div id="summaryContent" class="summary-content"></div>
+
+  <div class="dialog-actions">
+    <button id="saveSummary" type="button" class="save-button">
+      Save Flight Summary
+    </button>
+    <button id="finishSummary" type="button">
+      Close
+    </button>
+  </div>
 </dialog>
 
 <dialog id="dialog">
@@ -255,17 +305,12 @@
   </p>
 
   <div class="dialog-actions">
-    <button id="cancel" type="button">
-      Cancel
-    </button>
-
-    <button id="confirm" type="button" class="danger">
-      Confirm Reset
-    </button>
+    <button id="cancel" type="button">Cancel</button>
+    <button id="confirm" type="button" class="danger">Confirm Reset</button>
   </div>
 </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@Supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="script.js"></script>
 
