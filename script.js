@@ -318,6 +318,222 @@ function savePracticeState() {
   );
 }
 
+
+/* =========================
+   CLOUD STORAGE
+========================= */
+
+async function syncCloudData() {
+  if (!sb || !user) return;
+
+  try {
+    const [
+      { data: cloudSaved, error: savedError },
+      { data: cloudPractice, error: practiceError }
+    ] = await Promise.all([
+      sb.from("saved_flights")
+        .select("id,title,state,completed,created_at,updated_at")
+        .order("updated_at", { ascending: false }),
+      sb.from("practice_flights")
+        .select("id,title,data,created_at,updated_at")
+        .order("updated_at", { ascending: false })
+    ]);
+
+    if (savedError) throw savedError;
+    if (practiceError) throw practiceError;
+
+    const localSaved = getSavedFlights();
+    const localPractice = getPracticeFlights();
+
+    if ((!cloudSaved || cloudSaved.length === 0) && localSaved.length) {
+      for (const flight of localSaved) {
+        await sb.from("saved_flights").insert({
+          title: flight.title || "Saved Flight",
+          state: flight.state || {},
+          completed: Boolean(flight.state?.finishedAt || flight.completed)
+        });
+      }
+    }
+
+    if ((!cloudPractice || cloudPractice.length === 0) && localPractice.length) {
+      for (const flight of localPractice) {
+        await sb.from("practice_flights").insert({
+          title: flight.title || "Practice Flight",
+          data: flight.state || {}
+        });
+      }
+    }
+
+    const { data: savedRows, error: savedReloadError } = await sb
+      .from("saved_flights")
+      .select("id,title,state,completed,created_at,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(30);
+
+    if (savedReloadError) throw savedReloadError;
+
+    const { data: practiceRows, error: practiceReloadError } = await sb
+      .from("practice_flights")
+      .select("id,title,data,created_at,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(10);
+
+    if (practiceReloadError) throw practiceReloadError;
+
+    localStorage.setItem(
+      savedKey(),
+      JSON.stringify((savedRows || []).map(row => ({
+        id: row.id,
+        title: row.title,
+        timestamp: row.updated_at || row.created_at,
+        state: row.state || {},
+        completed: Boolean(row.completed),
+        cloudId: row.id
+      })))
+    );
+
+    localStorage.setItem(
+      practiceKey(),
+      JSON.stringify((practiceRows || []).map(row => ({
+        id: row.id,
+        title: row.title,
+        timestamp: row.updated_at || row.created_at,
+        state: row.data || {},
+        cloudId: row.id
+      })))
+    );
+
+    renderSavedFlights();
+    renderPracticeFlights();
+  } catch (error) {
+    console.error("Cloud flight sync failed:", error);
+  }
+}
+
+async function syncSavedFlightsToCloud(flights) {
+  if (!sb || !user) return;
+
+  try {
+    const { data: remote, error } = await sb
+      .from("saved_flights")
+      .select("id");
+
+    if (error) throw error;
+
+    const keepIds = new Set();
+
+    for (const flight of flights.slice(0, 30)) {
+      if (flight.cloudId) {
+        keepIds.add(flight.cloudId);
+
+        await sb
+          .from("saved_flights")
+          .update({
+            title: flight.title || "Saved Flight",
+            state: flight.state || {},
+            completed: Boolean(flight.completed || flight.state?.finishedAt)
+          })
+          .eq("id", flight.cloudId);
+      } else {
+        const { data, error: insertError } = await sb
+          .from("saved_flights")
+          .insert({
+            title: flight.title || "Saved Flight",
+            state: flight.state || {},
+            completed: Boolean(flight.completed || flight.state?.finishedAt)
+          })
+          .select("id")
+          .single();
+
+        if (insertError) throw insertError;
+
+        flight.cloudId = data.id;
+        keepIds.add(data.id);
+      }
+    }
+
+    for (const row of remote || []) {
+      if (!keepIds.has(row.id)) {
+        await sb
+          .from("saved_flights")
+          .delete()
+          .eq("id", row.id);
+      }
+    }
+
+    localStorage.setItem(savedKey(), JSON.stringify(flights.slice(0, 30)));
+  } catch (error) {
+    console.error("Saved Flights cloud sync failed:", error);
+  }
+}
+
+async function syncPracticeFlightsToCloud(flights) {
+  if (!sb || !user) return;
+
+  try {
+    const { data: remote, error } = await sb
+      .from("practice_flights")
+      .select("id");
+
+    if (error) throw error;
+
+    const keepIds = new Set();
+
+    for (const flight of flights.slice(0, 10)) {
+      if (flight.cloudId) {
+        keepIds.add(flight.cloudId);
+
+        await sb
+          .from("practice_flights")
+          .update({
+            title: flight.title || "Practice Flight",
+            data: flight.state || {}
+          })
+          .eq("id", flight.cloudId);
+      } else {
+        const { data, error: insertError } = await sb
+          .from("practice_flights")
+          .insert({
+            title: flight.title || "Practice Flight",
+            data: flight.state || {}
+          })
+          .select("id")
+          .single();
+
+        if (insertError) throw insertError;
+
+        flight.cloudId = data.id;
+        keepIds.add(data.id);
+      }
+    }
+
+    for (const row of remote || []) {
+      if (!keepIds.has(row.id)) {
+        await sb
+          .from("practice_flights")
+          .delete()
+          .eq("id", row.id);
+      }
+    }
+
+    localStorage.setItem(practiceKey(), JSON.stringify(flights.slice(0, 10)));
+  } catch (error) {
+    console.error("Practice Flights cloud sync failed:", error);
+  }
+}
+
+async function touchActivity() {
+  if (!sb || !user) return;
+
+  const { error } = await sb.rpc("touch_user_activity", {
+    p_user_id: user.id
+  });
+
+  if (error) {
+    console.error("Activity update failed:", error);
+  }
+}
+
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(mainKey()));
@@ -1157,6 +1373,10 @@ function setPracticeFlights(flights) {
     practiceKey(),
     JSON.stringify(flights)
   );
+
+  if (user) {
+    void syncPracticeFlightsToCloud(flights);
+  }
 }
 
 function savePracticeCurrent() {
@@ -1186,6 +1406,9 @@ function savePracticeCurrent() {
   }
 
   setPracticeFlights(flights);
+  if (user) {
+    void syncPracticeFlightsToCloud(flights);
+  }
   renderPracticeFlights();
 }
 
@@ -1570,6 +1793,10 @@ function setSavedFlights(flights) {
     savedKey(),
     JSON.stringify(flights)
   );
+
+  if (user) {
+    void syncSavedFlightsToCloud(flights);
+  }
 }
 
 function saveCurrentFlight() {
@@ -1599,6 +1826,10 @@ function saveCurrentFlight() {
   }
 
   setSavedFlights(flights);
+
+  if (user) {
+    void syncSavedFlightsToCloud(flights);
+  }
 
   const button =
     $("saveFlight");
@@ -1789,6 +2020,9 @@ async function startUser(u) {
     u.email || "Account";
 
   app();
+
+  await touchActivity();
+  await syncCloudData();
 }
 
 async function startGuest() {
