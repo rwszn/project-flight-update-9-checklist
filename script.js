@@ -272,6 +272,7 @@ let advancedOpen = false;
 let notesOpen = false;
 
 let flightStartedAt = null;
+let flightTimerInterval = null;
 let completionSummary = null;
 
 let practiceBuilderOpen = false;
@@ -316,6 +317,40 @@ function practiceKey() {
 
 function save() {
   localStorage.setItem(mainKey(), JSON.stringify(state));
+}
+
+function formatTimer(seconds) {
+  const total = Math.max(0, Math.floor(seconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+
+  return [
+    hours,
+    String(minutes).padStart(2, "0"),
+    String(secs).padStart(2, "0")
+  ].join(":");
+}
+
+function updateFlightTimer() {
+  if (!$("flightTimer")) return;
+
+  const seconds = completionSummary?.duration ??
+    (flightStartedAt ? Math.floor((Date.now() - flightStartedAt) / 1000) : 0);
+
+  $("flightTimer").textContent = formatTimer(seconds);
+}
+
+function startFlightTimer() {
+  clearInterval(flightTimerInterval);
+  updateFlightTimer();
+  flightTimerInterval = setInterval(updateFlightTimer, 1000);
+}
+
+function stopFlightTimer() {
+  clearInterval(flightTimerInterval);
+  flightTimerInterval = null;
+  updateFlightTimer();
 }
 
 function savePracticeState() {
@@ -552,12 +587,21 @@ function load() {
         advanced: saved.advanced || {},
         info: saved.info || {},
         notes: saved.notes || "",
-        mode: saved.mode || "full"
+        mode: saved.mode || "full",
+        startedAt: saved.startedAt || null,
+        finishedAt: saved.finishedAt || null,
+        durationSeconds: saved.durationSeconds || null
       };
     }
   } catch {}
 
   currentMode = state.mode || "full";
+
+  flightStartedAt =
+    state.startedAt ||
+    Date.now();
+
+  startFlightTimer();
 
   try {
     const active = JSON.parse(
@@ -1658,13 +1702,21 @@ function completeNormalFlight() {
   const counts =
     getNormalCounts();
 
+  const duration =
+    getFlightDuration();
+
+  state.finishedAt =
+    new Date().toISOString();
+
+  state.durationSeconds =
+    duration;
+
   completionSummary = {
     completed:
       counts.completed,
     skipped:
       counts.skipped,
-    duration:
-      getFlightDuration(),
+    duration,
     aircraft:
       state.info.aircraft || "Not entered",
     flight:
@@ -1673,7 +1725,11 @@ function completeNormalFlight() {
       state.notes || ""
   };
 
+  save();
+
   renderSummary();
+
+  stopFlightTimer();
 
   $("summaryDialog").showModal();
 }
@@ -1711,11 +1767,11 @@ function renderSummary() {
     "summary-grid";
 
   const rows = [
-    ["Completed", summary.completed],
-    ["Skipped", summary.skipped],
-    ["Flight time", formatDuration(summary.duration)],
     ["Aircraft", summary.aircraft],
-    ["Flight number", summary.flight]
+    ["Flight", summary.flight],
+    ["Duration", formatDuration(summary.duration)],
+    ["Checklist", "100%"],
+    ["Skipped", summary.skipped]
   ];
 
   rows.forEach(([label, value]) => {
@@ -1858,6 +1914,13 @@ function saveCompletedSummary() {
     return;
   }
 
+  state.finishedAt =
+    state.finishedAt ||
+    new Date().toISOString();
+
+  state.durationSeconds =
+    completionSummary.duration;
+
   saveCurrentFlight();
 
   const button =
@@ -1953,6 +2016,10 @@ function renderSavedFlights() {
           )
         );
 
+      flightStartedAt =
+        state.startedAt ||
+        Date.now();
+
       currentMode =
         state.mode ||
         "full";
@@ -1964,6 +2031,7 @@ function renderSavedFlights() {
         Date.now();
 
       save();
+      startFlightTimer();
       applyMode(true);
 
       $("savedDialog").close();
@@ -2014,6 +2082,120 @@ function renderSavedFlights() {
   });
 }
 
+
+/* =========================
+   FLIGHT STATISTICS
+========================= */
+
+function formatLongDuration(seconds) {
+  const total = Math.max(0, Math.round(seconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+}
+
+function getFlightStatistics() {
+  const completedFlights =
+    getSavedFlights().filter(flight =>
+      Boolean(
+        flight.state?.finishedAt ||
+        flight.state?.durationSeconds
+      )
+    );
+
+  const durations =
+    completedFlights.map(flight =>
+      Number(flight.state?.durationSeconds || 0)
+    );
+
+  const totalSeconds =
+    durations.reduce(
+      (sum, value) => sum + value,
+      0
+    );
+
+  const aircraftCounts = {};
+
+  completedFlights.forEach(flight => {
+    const aircraft =
+      String(flight.state?.info?.aircraft || "").trim();
+
+    if (aircraft) {
+      aircraftCounts[aircraft] =
+        (aircraftCounts[aircraft] || 0) + 1;
+    }
+  });
+
+  const aircraftEntries =
+    Object.entries(aircraftCounts)
+      .sort((a, b) => b[1] - a[1]);
+
+  return {
+    flightsCompleted:
+      completedFlights.length,
+    totalSeconds,
+    mostUsedAircraft:
+      aircraftEntries[0]?.[0] || "Not enough data",
+    averageSeconds:
+      durations.length
+        ? totalSeconds / durations.length
+        : 0
+  };
+}
+
+function renderFlightStatistics() {
+  const stats =
+    getFlightStatistics();
+
+  const values = [
+    ["Flights completed", stats.flightsCompleted],
+    ["Total flight time", formatLongDuration(stats.totalSeconds)],
+    ["Most used aircraft", stats.mostUsedAircraft],
+    ["Average flight duration", formatLongDuration(stats.averageSeconds)]
+  ];
+
+  $("statisticsContent").innerHTML = "";
+
+  const grid =
+    document.createElement("div");
+
+  grid.className =
+    "stats-grid";
+
+  values.forEach(([label, value]) => {
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "stats-card";
+
+    const strong =
+      document.createElement("strong");
+
+    strong.textContent =
+      label;
+
+    const valueElement =
+      document.createElement("span");
+
+    valueElement.textContent =
+      value;
+
+    card.append(
+      strong,
+      valueElement
+    );
+
+    grid.appendChild(card);
+  });
+
+  $("statisticsContent").appendChild(grid);
+}
 
 /* =========================
    AUTH
