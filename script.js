@@ -388,6 +388,8 @@ function resetCurrentFlight() {
   };
 
   flightStartedAt = null;
+  flightPaused = false;
+  flightPausedAt = null;
   completionSummary = null;
 
   save();
@@ -698,11 +700,16 @@ function load() {
       ? Date.parse(state.startedAt)
       : null;
 
+  flightPaused = Boolean(state.pausedAt) && Boolean(flightStartedAt);
+  flightPausedAt = state.pausedAt ? Date.parse(state.pausedAt) : null;
+
   if (state.finishedAt) {
     flightStartedAt = null;
+    flightPaused = false;
+    flightPausedAt = null;
   }
 
-  if (flightStartedAt) {
+  if (flightStartedAt && !flightPaused) {
     startFlightTimer();
   } else {
     stopFlightTimer();
