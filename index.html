@@ -5,14 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Project Flight Checklist</title>
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-5NQVYQRH8H"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-5NQVYQRH8H');
-</script>
-
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -269,11 +261,160 @@
   </div>
 
   <footer class="site-footer">
-    © 2026 Project Flight Checklist. All rights reserved.
+    <div>© 2026 Project Flight Checklist. All rights reserved.</div>
+    <div class="footer-links">
+      <button id="termsLink" type="button" class="link">Terms of Service</button>
+      <button id="privacyLink" type="button" class="link">Privacy Policy</button>
+      <button id="cookiesLink" type="button" class="link">Cookie Policy</button>
+      <button id="cookieSettingsLink" type="button" class="link">Cookie Settings</button>
+    </div>
   </footer>
 
 </div>
 </main>
+
+
+<dialog id="termsDialog" class="policy-dialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Terms of Service</h2>
+      <p>Last updated: 20 September 2026</p>
+    </div>
+    <button id="closeTerms" type="button" class="small-button">Close</button>
+  </div>
+
+  <div class="policy-content">
+    <h3>1. About the service</h3>
+    <p>Project Flight Checklist is a checklist and flight-planning companion for Roblox and other flight-simulation use. It is not an aviation training system and is not intended for real-world flight operations.</p>
+
+    <h3>2. Use of the website</h3>
+    <p>You agree to use the website lawfully and not to attempt to disrupt, damage, abuse, or gain unauthorised access to the service or another user's account.</p>
+
+    <h3>3. Accounts</h3>
+    <p>You are responsible for keeping your account credentials secure and for activity carried out through your account. You must provide an email address you are permitted to use.</p>
+
+    <h3>4. Account inactivity</h3>
+    <p>Accounts are automatically deleted after 6 months of inactivity. Logging in resets the inactivity period. Saved flight and practice-flight data linked to a deleted account may also be deleted.</p>
+
+    <h3>5. Flight information</h3>
+    <p>The checklist is general guidance for simulated flight. Aircraft, controls, servers, and available features can vary. You are responsible for deciding whether an item is relevant to the aircraft or simulator you are using.</p>
+
+    <h3>6. Availability</h3>
+    <p>The website is provided on an availability basis. Features may be changed, suspended, or removed. We do not guarantee that the service will always be available or that saved data will never be lost.</p>
+
+    <h3>7. Your data</h3>
+    <p>Use of accounts and saved flight data is also governed by the Privacy Policy and Cookie Policy.</p>
+
+    <h3>8. Changes</h3>
+    <p>These Terms may be updated when the service or its legal requirements change. The latest version will be available on this website.</p>
+
+    <h3>9. Contact</h3>
+    <p>For questions about these Terms, use the contact details provided by the Project Flight Checklist operator.</p>
+  </div>
+</dialog>
+
+<dialog id="privacyDialog" class="policy-dialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Privacy Policy</h2>
+      <p>Last updated: 20 September 2026</p>
+    </div>
+    <button id="closePrivacy" type="button" class="small-button">Close</button>
+  </div>
+
+  <div class="policy-content">
+    <h3>1. What we collect</h3>
+    <p>If you create an account, we collect your email address and the information needed to provide account access. Your saved flights, practice flights, checklist state, flight information, and notes may be stored when you use those features.</p>
+
+    <h3>2. Account activity</h3>
+    <p>For registered accounts, we record the last time the account was active. This is used to enforce the 6-month inactivity deletion policy. Logging in resets the inactivity period.</p>
+
+    <h3>3. Where data is stored</h3>
+    <p>Account and saved-flight data is provided through Supabase. The Project Flight Checklist Supabase project is hosted in the EU Central region. Local checklist data may also be stored in your browser using local storage.</p>
+
+    <h3>4. Analytics</h3>
+    <p>With your consent, Google Analytics is used to understand how the website is used and to improve the service. Analytics is not loaded until you accept analytics cookies. You can withdraw or change your choice through Cookie Settings.</p>
+
+    <h3>5. Service providers</h3>
+    <p>The website uses third-party services including Supabase for authentication and data storage, Vercel for website hosting, and Google Analytics for analytics when consent is provided. These providers may process information as necessary to provide their services.</p>
+
+    <h3>6. How long we keep data</h3>
+    <p>Registered accounts are automatically deleted after 6 months of inactivity. When an account is deleted, associated account data and saved flight data are intended to be removed through the account deletion process. Browser-stored data may remain until you clear it or the website removes it.</p>
+
+    <h3>7. Your choices and rights</h3>
+    <p>You can choose whether to allow non-essential analytics cookies. Depending on the circumstances, UK data protection law may give you rights including access, correction, deletion, restriction, objection, and data portability. You can contact the Project Flight Checklist operator to exercise applicable rights.</p>
+
+    <h3>8. Security</h3>
+    <p>Reasonable technical measures are used to protect the service, but no online service can guarantee absolute security.</p>
+
+    <h3>9. Contact</h3>
+    <p>For privacy questions or requests, use the contact details provided by the Project Flight Checklist operator.</p>
+  </div>
+</dialog>
+
+<dialog id="cookiesDialog" class="policy-dialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Cookie Policy</h2>
+      <p>Last updated: 20 September 2026</p>
+    </div>
+    <button id="closeCookies" type="button" class="small-button">Close</button>
+  </div>
+
+  <div class="policy-content">
+    <h3>1. What are cookies?</h3>
+    <p>Cookies are small pieces of information stored by your browser. Similar technologies such as local storage can also store information on your device.</p>
+
+    <h3>2. Essential storage</h3>
+    <p>The website uses essential browser storage to keep checklist data and preferences working. A guest-session cookie is used when you choose to continue as a guest. These technologies are used to provide features you have requested.</p>
+
+    <h3>3. Analytics cookies</h3>
+    <p>If you choose to accept analytics cookies, Google Analytics may use cookies and similar technologies to measure visits, sessions, and how people interact with the website. Analytics is optional and is not enabled before consent.</p>
+
+    <h3>4. Your choice</h3>
+    <p>You can accept or reject analytics cookies when the cookie notice appears. You can change your choice later using Cookie Settings in the footer.</p>
+
+    <h3>5. Third parties</h3>
+    <p>Google Analytics is a third-party analytics service. Supabase and other service providers may also use technologies necessary to provide their services. See the Privacy Policy for more information.</p>
+  </div>
+</dialog>
+
+<dialog id="cookieSettingsDialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Cookie Settings</h2>
+      <p>Choose whether optional analytics cookies are enabled.</p>
+    </div>
+    <button id="closeCookieSettings" type="button" class="small-button">Close</button>
+  </div>
+
+  <div class="cookie-settings">
+    <div>
+      <strong>Essential storage</strong>
+      <p>Always enabled because it is needed for requested website features such as guest sessions and saved checklist data.</p>
+    </div>
+    <div>
+      <strong>Analytics cookies</strong>
+      <p>Optional. Used by Google Analytics to measure website usage.</p>
+      <div class="cookie-setting-actions">
+        <button id="acceptAnalytics" type="button" class="save-button">Allow Analytics</button>
+        <button id="rejectAnalytics" type="button">Reject Analytics</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div id="cookieBanner" class="cookie-banner hidden">
+  <div>
+    <strong>Cookies and privacy</strong>
+    <p>Project Flight Checklist uses essential browser storage to provide the service. Optional analytics cookies are used only if you allow them. Read the <button id="cookieBannerPolicy" type="button" class="link">Cookie Policy</button>.</p>
+  </div>
+  <div class="cookie-banner-actions">
+    <button id="rejectCookies" type="button">Reject Analytics</button>
+    <button id="acceptCookies" type="button" class="save-button">Allow Analytics</button>
+  </div>
+</div>
+
 
 <dialog id="menuDialog">
   <div class="dialog-header">
