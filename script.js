@@ -6,7 +6,14 @@ const sb =
   C.supabasePublishableKey !== "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE"
     ? window.supabase.createClient(
         C.supabaseUrl,
-        C.supabasePublishableKey
+        C.supabasePublishableKey,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
       )
     : null;
 
