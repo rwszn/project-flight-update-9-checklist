@@ -354,14 +354,43 @@ function updateFlightControlsVisibility() {
 
 function updateStartFlightButtons() {
   const active = Boolean(flightStartedAt) && !state.finishedAt;
-  const buttons = [$("startFlight")].filter(Boolean);
+  const button = $("startFlight");
 
-  buttons.forEach(button => {
-    button.textContent = active ? "Flight Started" : "Start Flight";
-    button.disabled = currentMode === "practice" || active || Boolean(state.finishedAt);
-  });
+  if (button) {
+    button.classList.toggle(
+      "hidden",
+      currentMode === "practice" || active
+    );
+    button.disabled = false;
+    button.textContent = "Start Flight";
+  }
 
   updateFlightControlsVisibility();
+}
+
+function resetCurrentFlight() {
+  clearInterval(flightTimerInterval);
+  flightTimerInterval = null;
+
+  state = {
+    checks: {},
+    skipped: {},
+    advanced: {},
+    info: {},
+    notes: "",
+    mode: currentMode,
+    startedAt: null,
+    finishedAt: null,
+    durationSeconds: null
+  };
+
+  flightStartedAt = null;
+  completionSummary = null;
+
+  save();
+  updateStartFlightButtons();
+  updateFlightTimer();
+  render();
 }
 
 function startFlight() {
@@ -1047,7 +1076,7 @@ function applyMode(shouldRender = true) {
     isPractice
   );
 
-  $("advanced").classList.remove("hidden");
+  // Advanced Controls are opened from the Menu.
 
   if (shouldRender) {
     render();
@@ -1915,7 +1944,7 @@ function setSavedFlights(flights) {
 }
 
 function saveCurrentFlight() {
-  if (!flightStartedAt || state.finishedAt) {
+  if (!flightStartedAt && !completionSummary && !state.finishedAt) {
     return;
   }
 
@@ -1946,10 +1975,6 @@ function saveCurrentFlight() {
 
   setSavedFlights(flights);
 
-  if (user) {
-    void syncSavedFlightsToCloud(flights);
-  }
-
   const button =
     $("saveFlight");
 
@@ -1963,6 +1988,8 @@ function saveCurrentFlight() {
     button.textContent =
       original;
   }, 1500);
+
+  resetCurrentFlight();
 }
 
 function saveCompletedSummary() {
@@ -1992,6 +2019,8 @@ function saveCompletedSummary() {
     button.textContent =
       original;
   }, 1500);
+
+  resetCurrentFlight();
 }
 
 function renderSavedFlights() {
@@ -2519,24 +2548,21 @@ $("flightModeButton").onclick =
    ADVANCED
 ========================= */
 
-$("advanced").onclick =
-  () => {
-    advancedOpen =
-      !advancedOpen;
+function toggleAdvanced() {
+  advancedOpen = !advancedOpen;
 
-    $("advancedPanel")
-      .classList.toggle(
-        "hidden",
-        !advancedOpen
-      );
+  $("advancedPanel").classList.toggle(
+    "hidden",
+    !advancedOpen
+  );
 
-    $("advanced").textContent =
-      advancedOpen
-        ? "Hide Advanced"
-        : "Advanced";
+  $("menuAdvanced").textContent =
+    advancedOpen
+      ? "Hide Advanced"
+      : "Advanced";
 
-    progress();
-  };
+  progress();
+}
 
 
 /* =========================
@@ -2586,25 +2612,28 @@ $("closeMenu").onclick =
 $("menuSavedFlights").onclick =
   () => {
     $("menuDialog").close();
-    $("savedFlights").click();
+    renderSavedFlights();
+    $("savedDialog").showModal();
   };
 
 $("menuPracticeFlights").onclick =
   () => {
     $("menuDialog").close();
-    $("practiceFlights").click();
+    renderPracticeFlights();
+    $("practiceDialog").showModal();
   };
 
 $("menuStatistics").onclick =
   () => {
     $("menuDialog").close();
-    $("statistics").click();
+    renderFlightStatistics();
+    $("statisticsDialog").showModal();
   };
 
 $("menuAdvanced").onclick =
   () => {
     $("menuDialog").close();
-    $("advanced").click();
+    toggleAdvanced();
   };
 
 $("startFlight").onclick = startFlight;
@@ -2743,20 +2772,7 @@ $("cancel").onclick =
 
 $("confirm").onclick =
   () => {
-    state = {
-      checks: {},
-      skipped: {},
-      advanced: {},
-      info: {},
-      notes: "",
-      mode: currentMode,
-      startedAt: Date.now(),
-      finishedAt: null,
-      durationSeconds: null
-    };
-
-    flightStartedAt = null;
-    stopFlightTimer();
+    resetCurrentFlight();
 
     practiceState = {
       selected: [],
@@ -2768,33 +2784,20 @@ $("confirm").onclick =
     };
 
     activePracticeId = null;
-    completionSummary = null;
-    flightStartedAt = null;
-
-    save();
-    updateStartFlightButtons();
     savePracticeState();
 
     advancedOpen = false;
     notesOpen = false;
 
-    $("advancedPanel")
-      .classList.add("hidden");
+    $("advancedPanel").classList.add("hidden");
+    $("menuAdvanced").textContent = "Advanced";
 
-    $("advanced").textContent =
-      "Advanced";
+    $("notesPage").classList.add("hidden");
+    $("notesToggle").textContent = "Notes";
 
-    $("notesPage")
-      .classList.add("hidden");
-
-    $("notesToggle").textContent =
-      "Notes";
-
-    $("dialog")
-      .close();
+    $("dialog").close();
 
     applyMode(true);
-    updateFlightControlsVisibility();
 
     window.scrollTo({
       top: 0,
