@@ -336,7 +336,9 @@ function updateFlightTimer() {
   if (!$("flightTimer")) return;
 
   const seconds = completionSummary?.duration ??
-    (flightStartedAt ? Math.floor((Date.now() - flightStartedAt) / 1000) : 0);
+    (state.finishedAt && state.durationSeconds != null
+      ? state.durationSeconds
+      : (flightStartedAt ? Math.floor((Date.now() - flightStartedAt) / 1000) : 0));
 
   $("flightTimer").textContent = formatTimer(seconds);
 }
@@ -2536,6 +2538,17 @@ $("closePracticeDialog").onclick =
       .close();
   };
 
+$("statistics").onclick =
+  () => {
+    renderFlightStatistics();
+    $("statisticsDialog").showModal();
+  };
+
+$("closeStatistics").onclick =
+  () => {
+    $("statisticsDialog").close();
+  };
+
 $("startPractice").onclick =
   startPracticeFlight;
 
@@ -2625,8 +2638,14 @@ $("confirm").onclick =
       advanced: {},
       info: {},
       notes: "",
-      mode: currentMode
+      mode: currentMode,
+      startedAt: Date.now(),
+      finishedAt: null,
+      durationSeconds: null
     };
+
+    flightStartedAt = state.startedAt;
+    startFlightTimer();
 
     practiceState = {
       selected: [],
