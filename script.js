@@ -343,6 +343,15 @@ function updateFlightTimer() {
   $("flightTimer").textContent = formatTimer(seconds);
 }
 
+function updateFlightControlsVisibility() {
+  const started = Boolean(flightStartedAt) && !state.finishedAt;
+  const actions = $("flightActions");
+
+  if (actions) {
+    actions.classList.toggle("hidden", !started);
+  }
+}
+
 function updateStartFlightButtons() {
   const active = Boolean(flightStartedAt) && !state.finishedAt;
   const buttons = [$("startFlight")].filter(Boolean);
@@ -351,6 +360,8 @@ function updateStartFlightButtons() {
     button.textContent = active ? "Flight Started" : "Start Flight";
     button.disabled = currentMode === "practice" || active || Boolean(state.finishedAt);
   });
+
+  updateFlightControlsVisibility();
 }
 
 function startFlight() {
@@ -1904,6 +1915,10 @@ function setSavedFlights(flights) {
 }
 
 function saveCurrentFlight() {
+  if (!flightStartedAt || state.finishedAt) {
+    return;
+  }
+
   const flights =
     getSavedFlights();
 
@@ -2712,6 +2727,10 @@ $("logout").onclick =
 
 $("endFlight").onclick =
   () => {
+    if (!flightStartedAt || state.finishedAt) {
+      return;
+    }
+
     $("dialog")
       .showModal();
   };
@@ -2775,6 +2794,7 @@ $("confirm").onclick =
       .close();
 
     applyMode(true);
+    updateFlightControlsVisibility();
 
     window.scrollTo({
       top: 0,
