@@ -273,6 +273,8 @@ let notesOpen = false;
 
 let flightStartedAt = null;
 let flightTimerInterval = null;
+let flightPaused = false;
+let flightPausedAt = null;
 let completionSummary = null;
 
 let practiceBuilderOpen = false;
@@ -353,16 +355,17 @@ function updateFlightControlsVisibility() {
 }
 
 function updateStartFlightButtons() {
+  const button = $("flightControl");
   const active = Boolean(flightStartedAt) && !state.finishedAt;
-  const button = $("startFlight");
 
   if (button) {
-    button.classList.toggle(
-      "hidden",
-      currentMode === "practice" || active
-    );
+    button.classList.toggle("hidden", currentMode === "practice");
     button.disabled = false;
-    button.textContent = "Start Flight";
+    button.textContent = !active
+      ? "Start Flight"
+      : flightPaused
+        ? "Resume Flight"
+        : "Pause Flight";
   }
 
   updateFlightControlsVisibility();
@@ -394,23 +397,47 @@ function resetCurrentFlight() {
 }
 
 function startFlight() {
-  if (currentMode === "practice" || flightStartedAt || state.finishedAt) {
-    return;
+  if (currentMode === "practice" || state.finishedAt) return;
+
+  if (!flightStartedAt) {
+    flightStartedAt = Date.now();
+    state.startedAt = new Date(flightStartedAt).toISOString();
+    state.finishedAt = null;
+    state.durationSeconds = null;
+    state.pausedAt = null;
+    flightPaused = false;
+    flightPausedAt = null;
+    completionSummary = null;
+    save();
+    startFlightTimer();
+  } else if (flightPaused) {
+    const pausedFor = flightPausedAt ? Date.now() - flightPausedAt : 0;
+    flightStartedAt += pausedFor;
+    state.startedAt = new Date(flightStartedAt).toISOString();
+    state.pausedAt = null;
+    flightPaused = false;
+    flightPausedAt = null;
+    save();
+    startFlightTimer();
+  } else {
+    flightPaused = true;
+    flightPausedAt = Date.now();
+    state.pausedAt = new Date(flightPausedAt).toISOString();
+    clearInterval(flightTimerInterval);
+    flightTimerInterval = null;
+    save();
+    updateFlightTimer();
   }
 
-  flightStartedAt = Date.now();
-  state.startedAt = new Date(flightStartedAt).toISOString();
-  state.finishedAt = null;
-  state.durationSeconds = null;
-  completionSummary = null;
-
-  save();
   updateStartFlightButtons();
-  startFlightTimer();
 }
 
 function startFlightTimer() {
   clearInterval(flightTimerInterval);
+  if (!flightStartedAt || flightPaused) {
+    updateFlightTimer();
+    return;
+  }
   updateFlightTimer();
   flightTimerInterval = setInterval(updateFlightTimer, 1000);
 }
@@ -2636,7 +2663,7 @@ $("menuAdvanced").onclick =
     toggleAdvanced();
   };
 
-$("startFlight").onclick = startFlight;
+$("flightControl").onclick = startFlight;
 
 $("closeSaved").onclick =
   () => {
