@@ -2529,9 +2529,13 @@ async function init() {
       } else if (
         session?.user
       ) {
-        startUser(
-          session.user
-        );
+        // Do not make Supabase calls directly inside
+        // onAuthStateChange. Supabase documents that
+        // async Supabase calls inside this callback can
+        // cause the client to deadlock.
+        setTimeout(() => {
+          void startUser(session.user);
+        }, 0);
       }
     }
   );
