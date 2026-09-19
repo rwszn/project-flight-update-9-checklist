@@ -303,7 +303,86 @@ let practiceState = {
    HELPERS
 ========================= */
 
+
 const $ = id => document.getElementById(id);
+
+
+function getCookieConsent() {
+  const match = document.cookie.match(/(?:^|; )pf9_cookie_consent=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function setCookieConsent(value) {
+  document.cookie =
+    `pf9_cookie_consent=${encodeURIComponent(value)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+}
+
+function clearAnalyticsCookies() {
+  document.cookie.split(";").forEach(cookie => {
+    const name = cookie.split("=")[0].trim();
+
+    if (
+      name === "_ga" ||
+      name.startsWith("_ga_") ||
+      name === "_gid" ||
+      name.startsWith("_gat")
+    ) {
+      document.cookie =
+        `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
+
+      document.cookie =
+        `${name}=; Max-Age=0; Path=/; Domain=${location.hostname}; SameSite=Lax`;
+    }
+  });
+}
+
+function loadGoogleAnalytics() {
+  if (window.__pf9AnalyticsLoaded) return;
+
+  window.__pf9AnalyticsLoaded = true;
+
+  window.dataLayer = window.dataLayer || [];
+
+  window.gtag = function() {
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag("js", new Date());
+  window.gtag("config", "G-5NQVYQRH8H");
+
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = "https://www.googletagmanager.com/gtag/js?id=G-5NQVYQRH8H";
+  document.head.appendChild(script);
+}
+
+function applyCookieChoice(choice) {
+  setCookieConsent(choice);
+
+  if (choice === "analytics") {
+    loadGoogleAnalytics();
+  } else {
+    clearAnalyticsCookies();
+  }
+
+  $("cookieBanner")?.classList.add("hidden");
+}
+
+function showCookieBannerIfNeeded() {
+  if (!getCookieConsent()) {
+    $("cookieBanner")?.classList.remove("hidden");
+  } else if (getCookieConsent() === "analytics") {
+    loadGoogleAnalytics();
+  }
+}
+
+function openPolicyDialog(id) {
+  const dialog = $(id);
+
+  if (dialog && !dialog.open) {
+    dialog.showModal();
+  }
+}
 
 function mainKey() {
   return `pf9-${user ? user.id : "guest"}`;
@@ -2322,6 +2401,48 @@ function renderFlightStatistics() {
 
   $("statisticsContent").appendChild(grid);
 }
+
+/* =========================
+   LEGAL AND COOKIES
+========================= */
+
+$("termsLink").onclick = () => openPolicyDialog("termsDialog");
+$("privacyLink").onclick = () => openPolicyDialog("privacyDialog");
+$("cookiesLink").onclick = () => openPolicyDialog("cookiesDialog");
+
+$("cookieSettingsLink").onclick = () => {
+  openPolicyDialog("cookieSettingsDialog");
+};
+
+$("closeTerms").onclick = () => $("termsDialog").close();
+$("closePrivacy").onclick = () => $("privacyDialog").close();
+$("closeCookies").onclick = () => $("cookiesDialog").close();
+$("closeCookieSettings").onclick = () => $("cookieSettingsDialog").close();
+
+$("cookieBannerPolicy").onclick = () => {
+  openPolicyDialog("cookiesDialog");
+};
+
+$("acceptCookies").onclick = () => {
+  applyCookieChoice("analytics");
+};
+
+$("rejectCookies").onclick = () => {
+  applyCookieChoice("essential");
+};
+
+$("acceptAnalytics").onclick = () => {
+  applyCookieChoice("analytics");
+  $("cookieSettingsDialog").close();
+};
+
+$("rejectAnalytics").onclick = () => {
+  applyCookieChoice("essential");
+  $("cookieSettingsDialog").close();
+};
+
+showCookieBannerIfNeeded();
+
 
 /* =========================
    AUTH
