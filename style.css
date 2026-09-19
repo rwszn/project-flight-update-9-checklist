@@ -999,3 +999,41 @@ dialog p {
     font-size: 21px;
   }
 }
+
+
+.start-flight-button {
+  background: #d7a83b;
+  color: #111;
+  border-color: #d7a83b;
+  font-weight: bold;
+}
+
+.start-flight-button:hover {
+  background: #e3b94e;
+  border-color: #e3b94e;
+}
+
+.start-flight-button:disabled {
+  cursor: default;
+  opacity: .7;
+}
+
+.menu-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.menu-actions button {
+  width: 100%;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .flight-timer-panel {
+    align-items: stretch;
+  }
+
+  .flight-timer-panel .start-flight-button {
+    width: 100%;
+  }
+}
