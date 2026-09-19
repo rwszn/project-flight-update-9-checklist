@@ -2253,9 +2253,6 @@ async function startUser(u) {
   user = u;
   guest = false;
 
-  $("account").textContent =
-    u.email || "Account";
-
   app();
 
   await touchActivity();
@@ -2271,9 +2268,6 @@ async function startGuest() {
   guest = true;
 
   setGuest();
-
-  $("account").textContent =
-    "Guest";
 
   app();
 }
