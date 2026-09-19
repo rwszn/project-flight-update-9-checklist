@@ -2638,23 +2638,13 @@ $("menuAdvanced").onclick =
 
 $("startFlight").onclick = startFlight;
 
-$("savedFlights").onclick =
-  () => {
-    renderSavedFlights();
-
-    $("savedDialog")
-      .showModal();
-  };
-
 $("closeSaved").onclick =
   () => {
-    $("savedDialog")
-      .close();
+    $("savedDialog").close();
   };
 
 $("saveFlight").onclick =
   saveCurrentFlight;
-
 
 /* =========================
    PRACTICE FLIGHTS
