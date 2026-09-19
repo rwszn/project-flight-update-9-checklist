@@ -2650,24 +2650,10 @@ $("saveFlight").onclick =
    PRACTICE FLIGHTS
 ========================= */
 
-$("practiceFlights").onclick =
-  () => {
-    renderPracticeFlights();
-
-    $("practiceDialog")
-      .showModal();
-  };
-
 $("closePracticeDialog").onclick =
   () => {
     $("practiceDialog")
       .close();
-  };
-
-$("statistics").onclick =
-  () => {
-    renderFlightStatistics();
-    $("statisticsDialog").showModal();
   };
 
 $("closeStatistics").onclick =
