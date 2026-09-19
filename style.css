@@ -1029,11 +1029,11 @@ dialog p {
 }
 
 @media (max-width: 600px) {
-  .flight-timer-panel {
-    align-items: stretch;
+  .start-flight-bottom {
+    margin-top: 8px;
   }
 
-  .flight-timer-panel .start-flight-button {
+  .start-flight-bottom .start-flight-button {
     width: 100%;
   }
 }
