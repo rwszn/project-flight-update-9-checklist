@@ -41,3 +41,6 @@ The site intentionally avoids real-world airline procedures and only uses the si
 - Navigation
 - Taxi
 - Landing
+
+
+Authentication setup is being added with Supabase.
