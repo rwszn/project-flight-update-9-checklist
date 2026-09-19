@@ -125,13 +125,9 @@
   </div>
 
   <div class="header-actions">
-    <span id="account"></span>
     <button id="flightModeButton" type="button">Flight Mode</button>
-    <button id="savedFlights" type="button">Saved Flights</button>
-    <button id="practiceFlights" type="button">Practice Flights</button>
-    <button id="statistics" type="button">Statistics</button>
-    <button id="advanced" type="button">Advanced</button>
-    <button id="logout" type="button">Log Out</button>
+    <button id="startFlight" type="button" class="start-flight-button">Start Flight</button>
+    <button id="menuButton" type="button">Menu</button>
   </div>
 </header>
 
@@ -203,8 +199,11 @@
   </section>
 
   <section class="panel flight-timer-panel">
-    <div class="flight-timer-label">Flight Time</div>
-    <strong id="flightTimer">00:00:00</strong>
+    <div>
+      <div class="flight-timer-label">Flight Time</div>
+      <strong id="flightTimer">00:00:00</strong>
+    </div>
+    <button id="timerStartFlight" type="button" class="start-flight-button">Start Flight</button>
   </section>
 
   <section class="panel">
@@ -277,6 +276,24 @@
 
 </div>
 </main>
+
+<dialog id="menuDialog">
+  <div class="dialog-header">
+    <div>
+      <h2>Menu</h2>
+      <p>Flight tools and account options.</p>
+    </div>
+    <button id="closeMenu" type="button" class="small-button">Close</button>
+  </div>
+
+  <div class="menu-actions">
+    <button id="menuSavedFlights" type="button">Saved Flights</button>
+    <button id="menuPracticeFlights" type="button">Practice Flights</button>
+    <button id="menuStatistics" type="button">Statistics</button>
+    <button id="menuAdvanced" type="button">Advanced</button>
+    <button id="logout" type="button">Log Out</button>
+  </div>
+</dialog>
 
 <dialog id="savedDialog">
   <div class="dialog-header">
