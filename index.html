@@ -1,95 +1,117 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1118">
-  <meta name="description" content="Project Flight Roblox Update 9 airline-style flight checklist">
-  <title>Project Flight | Update 9 Checklist</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Flight Update 9 Checklist</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">PF</div>
-      <div>
-        <h1>PROJECT FLIGHT <span>UPDATE 9</span></h1>
-        <p>Full Airline-Style Flight Checklist</p>
-      </div>
+<div id="auth" class="auth">
+  <div class="auth-card">
+    <b class="logo">PF</b>
+    <h1>Project Flight Update 9</h1>
+    <p>Sign in to your flight checklist.</p>
+    <form id="login">
+      <input id="email" type="email" placeholder="Email" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button>Log In</button>
+    </form>
+    <div class="links">
+      <button id="register" type="button">Create account</button>
+      <button id="forgot" type="button">Forgot password?</button>
     </div>
-    <div class="header-actions">
-      <button id="flightInfoToggle" class="secondary-button" type="button" aria-expanded="false" aria-controls="flightInfoPanel">
-        Flight Information <span class="chevron">▼</span>
-      </button>
-      <button id="advancedToggle" class="secondary-button" type="button" aria-expanded="false" aria-controls="advancedPanel">
-        Advanced <span class="chevron">▼</span>
-      </button>
+    <button id="guest" type="button" class="secondary">Continue as Guest</button>
+    <p id="message"></p>
+  </div>
+</div>
+
+<div id="registerScreen" class="auth hidden">
+  <div class="auth-card">
+    <b class="logo">PF</b>
+    <h1>Create account</h1>
+    <form id="registerForm">
+      <input id="regEmail" type="email" placeholder="Email" required>
+      <input id="regPassword" type="password" placeholder="Password, 8+ characters" minlength="8" required>
+      <input id="regConfirm" type="password" placeholder="Confirm password" minlength="8" required>
+      <button>Create Account</button>
+    </form>
+    <button id="backRegister" class="link" type="button">Back to login</button>
+    <p id="registerMessage"></p>
+  </div>
+</div>
+
+<div id="forgotScreen" class="auth hidden">
+  <div class="auth-card">
+    <b class="logo">PF</b>
+    <h1>Reset password</h1>
+    <p>Enter your email and we will send a reset link.</p>
+    <form id="forgotForm">
+      <input id="forgotEmail" type="email" placeholder="Email" required>
+      <button>Send Reset Email</button>
+    </form>
+    <button id="backForgot" class="link" type="button">Back to login</button>
+    <p id="forgotMessage"></p>
+  </div>
+</div>
+
+<div id="recoveryScreen" class="auth hidden">
+  <div class="auth-card">
+    <b class="logo">PF</b>
+    <h1>Choose a new password</h1>
+    <form id="recoveryForm">
+      <input id="newPassword" type="password" placeholder="New password" minlength="8" required>
+      <input id="newConfirm" type="password" placeholder="Confirm password" minlength="8" required>
+      <button>Update Password</button>
+    </form>
+    <p id="recoveryMessage"></p>
+  </div>
+</div>
+
+<main id="app" class="hidden">
+<header>
+  <div class="brand"><b>PF</b><span>Project Flight Update 9<small>Flight Checklist</small></span></div>
+  <div><span id="account"></span><button id="advanced">Advanced</button><button id="logout">Log Out</button></div>
+</header>
+<div class="wrap">
+  <div class="warning">This checklist is for Project Flight Update 9 and is not suitable for every aircraft. Aircraft controls and available features can vary.</div>
+
+  <section class="panel">
+    <h2>Flight Information</h2>
+    <div class="info">
+      <input id="aircraft" placeholder="Aircraft">
+      <input id="flight" placeholder="Flight">
+      <input id="server" placeholder="Server">
+      <input id="gate" placeholder="Gate">
+      <input id="date" type="date">
     </div>
-  </header>
+  </section>
 
-  <main class="app-shell">
-    <section class="intro">
-      <div>
-        <p class="eyebrow">PROJECT FLIGHT FEATURES ONLY</p>
-        <h2>Flight checklist</h2>
-        <p class="warning">This checklist is for Project Flight Update 9 and is not suitable for every aircraft. Aircraft controls and available features can vary.</p>
-      </div>
-      <div class="progress-wrap" aria-live="polite">
-        <div class="progress-label">
-          <span id="progressText">FLIGHT CHECKLIST 0 / 0 COMPLETE</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress-track" aria-hidden="true"><div id="progressBar" class="progress-bar"></div></div>
-      </div>
-    </section>
+  <section id="advancedPanel" class="panel hidden">
+    <h2>Advanced / Aircraft Controls</h2>
+    <div id="advancedList"></div>
+  </section>
 
-    <section id="flightInfoPanel" class="collapsible-panel" hidden>
-      <div class="panel-heading">
-        <div>
-          <p class="eyebrow">FLIGHT DETAILS</p>
-          <h2>Flight information</h2>
-        </div>
-      </div>
-      <div class="info-grid">
-        <label>Aircraft<input data-field="aircraft" type="text" autocomplete="off" placeholder="Aircraft"></label>
-        <label>Flight<input data-field="flight" type="text" autocomplete="off" placeholder="Flight"></label>
-        <label>Server<input data-field="server" type="text" autocomplete="off" placeholder="Server"></label>
-        <label>Gate<input data-field="gate" type="text" autocomplete="off" placeholder="Gate"></label>
-        <label>Date<input data-field="date" type="date"></label>
-      </div>
-    </section>
+  <section class="panel">
+    <div class="progress"><span>Checklist Progress</span><b id="percent">0%</b></div>
+    <div class="bar"><i id="bar"></i></div>
+    <small id="count">0 of 0 complete</small>
+  </section>
 
-    <section id="advancedPanel" class="collapsible-panel advanced-panel" hidden>
-      <div class="panel-heading">
-        <div>
-          <p class="eyebrow">OPTIONAL AIRCRAFT CONTROLS</p>
-          <h2>Aircraft controls</h2>
-        </div>
-        <p>Only items in this section depend on manually checking aircraft controls.</p>
-      </div>
-      <div id="advancedChecklist" class="checklist-list"></div>
-    </section>
+  <div id="checklist"></div>
+  <button id="reset" class="danger">End Flight / Reset</button>
+</div>
+</main>
 
-    <section id="checklist" class="checklist"></section>
+<dialog id="dialog">
+  <h2>End Flight / Reset?</h2>
+  <p>This will clear the current checklist and flight information.</p>
+  <button id="cancel">Cancel</button>
+  <button id="confirm" class="danger">Confirm Reset</button>
+</dialog>
 
-    <footer class="footer">
-      <p>Project Flight Update 9. Browser-only checklist. Progress and flight information are saved locally on this device.</p>
-      <button id="resetButton" class="danger-button" type="button">END FLIGHT / RESET</button>
-    </footer>
-  </main>
-
-  <dialog id="resetDialog" class="reset-dialog">
-    <div class="dialog-inner">
-      <p class="eyebrow">FLIGHT CONTROL</p>
-      <h2>End Flight?</h2>
-      <p>This will clear your checklist progress and flight information. Are you sure?</p>
-      <div class="dialog-actions">
-        <button id="cancelReset" class="secondary-button" type="button">Cancel</button>
-        <button id="confirmReset" class="danger-button" type="button">Confirm Reset</button>
-      </div>
-    </div>
-  </dialog>
-
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

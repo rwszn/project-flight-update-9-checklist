@@ -1,46 +1,13 @@
 # Project Flight Update 9 Checklist
 
-A browser-only airline-style checklist for Project Flight on Roblox, Update 9.
+This version adds Supabase email/password authentication, account creation, email confirmation, password reset, guest access, logout, and the existing checklist.
 
-## Features
+## Setup
 
-- Clickable checklist items
-- Flight information fields
-- Local browser storage for checklist progress and flight information
-- Collapsible Flight Information panel
-- Collapsible Advanced aircraft controls
-- Progress counter
-- Confirmation before End Flight / Reset
-- Responsive PC, tablet and mobile layout
-- No backend, paid service or API
-- Plain HTML, CSS and JavaScript
+1. Open `config.js`.
+2. Paste your Supabase Publishable Key into `supabasePublishableKey`.
+3. Never put a Supabase secret or service-role key in this file.
+4. In Supabase Authentication settings, set the Vercel site URL as the Site URL and allowed redirect URL.
+5. Upload all five files to GitHub.
 
-## Files
-
-- `index.html`
-- `style.css`
-- `script.js`
-
-## Run locally
-
-Open `index.html` in a modern browser.
-
-## Deploy to Vercel
-
-Import the GitHub repository into Vercel as a static project. No build command or backend is required.
-
-## Scope
-
-This checklist is for Project Flight Update 9 only and is not suitable for every aircraft. Aircraft controls and available features can vary.
-
-The site intentionally avoids real-world airline procedures and only uses the six requested Project Flight lights:
-
-- Logo
-- Strobe
-- Beacon
-- Navigation
-- Taxi
-- Landing
-
-
-Authentication setup is being added with Supabase.
+The checklist itself is saved in browser storage. Authentication is handled by Supabase.
