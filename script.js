@@ -2294,18 +2294,34 @@ $("login").onsubmit =
       "Logging in..."
     );
 
-    const { error } =
-      await sb.auth.signInWithPassword({
-        email:
-          $("email").value.trim(),
-        password:
-          $("password").value
-      });
+    try {
+      const result = await Promise.race([
+        sb.auth.signInWithPassword({
+          email: $("email").value.trim(),
+          password: $("password").value
+        }),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("Login timed out. Please refresh the page and try again.")),
+            15000
+          )
+        )
+      ]);
 
-    if (error) {
+      if (result.error) {
+        return msg("message", result.error.message);
+      }
+
+      if (result.data?.user) {
+        msg("message", "Logged in.");
+        setTimeout(() => {
+          void startUser(result.data.user);
+        }, 0);
+      }
+    } catch (error) {
       msg(
         "message",
-        error.message
+        error?.message || "Login failed. Please try again."
       );
     }
   };
