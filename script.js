@@ -10,6 +10,11 @@ const sb =
       )
     : null;
 
+
+/* =========================
+   MAIN CHECKLIST
+========================= */
+
 const sections = {
   "PREFLIGHT / FLIGHT SETUP": [
     "Flight information entered",
@@ -147,6 +152,11 @@ const sections = {
   ]
 };
 
+
+/* =========================
+   ADVANCED CONTROLS
+========================= */
+
 const advanced = [
   "Throttle responds correctly",
   "Pitch responds correctly",
@@ -165,21 +175,127 @@ const advanced = [
   "Adjust throttle as required"
 ];
 
+
+/* =========================
+   PRACTICE MANEUVERS
+========================= */
+
+const practiceManeuvers = [
+  {
+    id: "steep-turns",
+    category: "In-Flight Practice Maneuvers",
+    title: "Steep Turns (30° to 45° Bank Angle)",
+    description:
+      "Roll into a sustained bank turn while maintaining altitude. Adjust pitch and slightly increase throttle to compensate for lost lift.",
+    success:
+      "Complete a 360-degree turn maintaining target altitude within ±100 feet."
+  },
+
+  {
+    id: "slow-flight",
+    category: "In-Flight Practice Maneuvers",
+    title: "Slow Flight Setup & Handling",
+    description:
+      "Reduce throttle and lower gear and full flaps to fly just above stall speed. Practice subtle bank turns and pitch changes at low airspeed.",
+    success:
+      "Aircraft remains stable without triggering a stall or losing control."
+  },
+
+  {
+    id: "stall-recovery",
+    category: "In-Flight Practice Maneuvers",
+    title: "Stall Entry & Recovery Practice",
+    description:
+      "Pitch up with low throttle until the wing stalls. Recover immediately: pitch nose down below the horizon, apply full throttle, level wings, and clean up flaps as airspeed recovers.",
+    success:
+      "Control is restored with minimal altitude loss."
+  },
+
+  {
+    id: "holding-patterns",
+    category: "In-Flight Practice Maneuvers",
+    title: "Holding Patterns",
+    description:
+      "Fly a timed racetrack pattern over a fixed location or waypoint using 1-minute legs.",
+    success:
+      "Standard rate turns complete exact 180-degree turn segments smoothly."
+  },
+
+  {
+    id: "engine-failure",
+    category: "In-Flight Practice Maneuvers",
+    title: "Engine Failure Glide & Trim",
+    description:
+      "Reduce engine power to idle at high altitude to simulate engine loss. Trim pitch for best glide speed and maneuver toward the nearest runway.",
+    success:
+      "Aircraft reaches the runway threshold with sufficient altitude to land."
+  },
+
+  {
+    id: "pattern-entry",
+    category: "Circuit & Touch-and-Go Practice",
+    title: "Pattern Entry & Approach",
+    description:
+      "Enter the downwind leg parallel to the runway. Establish glideslope on final approach using pitch for speed and power for descent rate.",
+    success:
+      "Line up cleanly with the runway centerline on final."
+  },
+
+  {
+    id: "touch-and-go",
+    category: "Circuit & Touch-and-Go Practice",
+    title: "Touch-and-Go Execution",
+    description:
+      "Touch down main landing gear smoothly on the touchdown zone. Do not engage reverse thrust or brakes. Advance throttle to full power, set flaps to takeoff position, and rotate back into a climb.",
+    success:
+      "Smooth transition back into climb without runway overrun."
+  }
+];
+
+
+/* =========================
+   STATE
+========================= */
+
 let user = null;
 let guest = false;
+
+let currentMode = "full";
 let advancedOpen = false;
+let notesOpen = false;
+
+let flightStartedAt = null;
+let completionSummary = null;
+
+let practiceBuilderOpen = false;
+let activePracticeId = null;
 
 let state = {
   checks: {},
   skipped: {},
   advanced: {},
   info: {},
-  notes: ""
+  notes: "",
+  mode: "full"
 };
+
+let practiceState = {
+  selected: [],
+  checks: {},
+  info: {},
+  notes: "",
+  title: "Practice Flight",
+  createdAt: null
+};
+
+
+/* =========================
+   HELPERS
+========================= */
 
 const $ = id => document.getElementById(id);
 
-function key() {
+function mainKey() {
   return `pf9-${user ? user.id : "guest"}`;
 }
 
@@ -187,13 +303,24 @@ function savedKey() {
   return `pf9-saved-${user ? user.id : "guest"}`;
 }
 
+function practiceKey() {
+  return `pf9-practice-${user ? user.id : "guest"}`;
+}
+
 function save() {
-  localStorage.setItem(key(), JSON.stringify(state));
+  localStorage.setItem(mainKey(), JSON.stringify(state));
+}
+
+function savePracticeState() {
+  localStorage.setItem(
+    `pf9-active-practice-${user ? user.id : "guest"}`,
+    JSON.stringify(practiceState)
+  );
 }
 
 function load() {
   try {
-    const saved = JSON.parse(localStorage.getItem(key()));
+    const saved = JSON.parse(localStorage.getItem(mainKey()));
 
     if (saved) {
       state = {
@@ -201,11 +328,34 @@ function load() {
         skipped: saved.skipped || {},
         advanced: saved.advanced || {},
         info: saved.info || {},
-        notes: saved.notes || ""
+        notes: saved.notes || "",
+        mode: saved.mode || "full"
       };
     }
   } catch {}
 
+  currentMode = state.mode || "full";
+
+  try {
+    const active = JSON.parse(
+      localStorage.getItem(
+        `pf9-active-practice-${user ? user.id : "guest"}`
+      )
+    );
+
+    if (active) {
+      practiceState = {
+        selected: active.selected || [],
+        checks: active.checks || {},
+        info: active.info || {},
+        notes: active.notes || "",
+        title: active.title || "Practice Flight",
+        createdAt: active.createdAt || null
+      };
+    }
+  } catch {}
+
+  applyMode(false);
   render();
 }
 
@@ -236,7 +386,10 @@ function setGuest() {
 
 function sectionFor(id) {
   const keys = Object.keys(sections);
-  return keys.find(title => id.startsWith(title + "-")) || "";
+
+  return keys.find(
+    title => id.startsWith(title + "-")
+  ) || "";
 }
 
 function sectionComplete(title) {
@@ -249,15 +402,40 @@ function sectionComplete(title) {
   });
 }
 
-function findFirstIncomplete() {
-  for (const title of Object.keys(sections)) {
-    if (!sectionComplete(title)) {
-      return title;
-    }
+function allMainChecklistComplete() {
+  return Object.keys(sections).every(sectionComplete);
+}
+
+function getFlightDuration() {
+  if (!flightStartedAt) {
+    return 0;
   }
 
-  return null;
+  return Math.max(
+    0,
+    Math.floor((Date.now() - flightStartedAt) / 1000)
+  );
 }
+
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  if (mins === 0) {
+    return `${secs} seconds`;
+  }
+
+  if (secs === 0) {
+    return `${mins} minute${mins === 1 ? "" : "s"}`;
+  }
+
+  return `${mins} minute${mins === 1 ? "" : "s"} ${secs} seconds`;
+}
+
+
+/* =========================
+   RENDER MAIN CHECKLIST
+========================= */
 
 function render() {
   $("checklist").innerHTML = "";
@@ -314,8 +492,15 @@ function render() {
 
   $("notes").value = state.notes || "";
 
+  renderPracticeBuilder();
+  renderActivePractice();
   progress();
 }
+
+
+/* =========================
+   CHECKLIST ITEM
+========================= */
 
 function item(text, id, isAdvanced) {
   const row = document.createElement("div");
@@ -350,7 +535,9 @@ function item(text, id, isAdvanced) {
     const skip = document.createElement("button");
     skip.type = "button";
     skip.className = "skip-button";
-    skip.textContent = state.skipped[id] ? "Unskip" : "Skip";
+    skip.textContent = state.skipped[id]
+      ? "Unskip"
+      : "Skip";
 
     skip.onclick = event => {
       event.preventDefault();
@@ -370,6 +557,10 @@ function item(text, id, isAdvanced) {
 
       if (title && sectionComplete(title)) {
         autoAdvance(title);
+      }
+
+      if (allMainChecklistComplete()) {
+        completeNormalFlight();
       }
     };
 
@@ -398,11 +589,20 @@ function item(text, id, isAdvanced) {
       if (title && sectionComplete(title)) {
         autoAdvance(title);
       }
+
+      if (allMainChecklistComplete()) {
+        completeNormalFlight();
+      }
     }
   };
 
   return row;
 }
+
+
+/* =========================
+   AUTO ADVANCE
+========================= */
 
 function autoAdvance(title) {
   const titles = Object.keys(sections);
@@ -412,10 +612,9 @@ function autoAdvance(title) {
     return;
   }
 
-  const nextTitle = titles[index + 1];
-
   setTimeout(() => {
-    const panels = document.querySelectorAll(".checklist-section");
+    const panels =
+      document.querySelectorAll(".checklist-section");
 
     panels[index + 1]?.scrollIntoView({
       behavior: "smooth",
@@ -423,6 +622,11 @@ function autoAdvance(title) {
     });
   }, 150);
 }
+
+
+/* =========================
+   PROGRESS
+========================= */
 
 function progress() {
   let total = 0;
@@ -434,7 +638,10 @@ function progress() {
 
       const id = `${title}-${index}`;
 
-      if (state.checks[id] || state.skipped[id]) {
+      if (
+        state.checks[id] ||
+        state.skipped[id]
+      ) {
         done++;
       }
     });
@@ -454,14 +661,1132 @@ function progress() {
 
   $("percent").textContent = percent + "%";
   $("bar").style.width = percent + "%";
-  $("count").textContent = `${done} of ${total} complete`;
+  $("count").textContent =
+    `${done} of ${total} complete`;
 }
+
+
+/* =========================
+   FLIGHT MODES
+========================= */
+
+function applyMode(shouldRender = true) {
+  const titles = {
+    quick: "Quick Flight",
+    full: "Full Flight",
+    practice: "Practice Flight"
+  };
+
+  const descriptions = {
+    quick:
+      "Main checklist with Flight Information and Notes. Advanced Controls remain available when needed.",
+    full:
+      "Full checklist with Flight Information, Notes and optional Advanced Controls.",
+    practice:
+      "Choose specific procedures to practise. Practice flights are kept separate from normal saved flights."
+  };
+
+  $("modeTitle").textContent = titles[currentMode];
+  $("modeDescription").textContent =
+    descriptions[currentMode];
+  $("modeLabel").textContent =
+    titles[currentMode];
+
+  $("quickMode").classList.toggle(
+    "active-mode",
+    currentMode === "quick"
+  );
+
+  $("fullMode").classList.toggle(
+    "active-mode",
+    currentMode === "full"
+  );
+
+  $("practiceMode").classList.toggle(
+    "active-mode",
+    currentMode === "practice"
+  );
+
+  const isPractice = currentMode === "practice";
+
+  $("checklist").classList.toggle(
+    "hidden",
+    isPractice && !activePracticeId
+  );
+
+  $("practiceBuilder").classList.toggle(
+    "hidden",
+    !isPractice || !!activePracticeId
+  );
+
+  $("practiceChecklistPanel").classList.toggle(
+    "hidden",
+    !isPractice || !activePracticeId
+  );
+
+  $("saveFlight").classList.toggle(
+    "hidden",
+    isPractice
+  );
+
+  $("advanced").classList.remove("hidden");
+
+  if (shouldRender) {
+    render();
+  }
+}
+
+function setMode(mode) {
+  if (currentMode === mode) {
+    return;
+  }
+
+  currentMode = mode;
+  state.mode = mode;
+  save();
+
+  if (mode !== "practice") {
+    activePracticeId = null;
+  }
+
+  applyMode(true);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+/* =========================
+   PRACTICE BUILDER
+========================= */
+
+function renderPracticeBuilder() {
+  const container = $("practiceOptions");
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  const categories = [
+    "In-Flight Practice Maneuvers",
+    "Circuit & Touch-and-Go Practice"
+  ];
+
+  categories.forEach(category => {
+    const group = document.createElement("div");
+    group.className = "practice-option-group";
+
+    const heading = document.createElement("h3");
+    heading.textContent = category;
+
+    group.appendChild(heading);
+
+    practiceManeuvers
+      .filter(item => item.category === category)
+      .forEach(maneuver => {
+        const label = document.createElement("label");
+        label.className = "practice-option";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked =
+          practiceState.selected.includes(
+            maneuver.id
+          );
+
+        checkbox.onchange = () => {
+          if (checkbox.checked) {
+            if (
+              !practiceState.selected.includes(
+                maneuver.id
+              )
+            ) {
+              practiceState.selected.push(
+                maneuver.id
+              );
+            }
+          } else {
+            practiceState.selected =
+              practiceState.selected.filter(
+                id => id !== maneuver.id
+              );
+
+            delete practiceState.checks[
+              maneuver.id
+            ];
+          }
+
+          savePracticeState();
+          renderPracticeBuilder();
+        };
+
+        const content =
+          document.createElement("div");
+
+        content.className =
+          "practice-option-content";
+
+        const title =
+          document.createElement("span");
+
+        title.className =
+          "practice-option-title";
+
+        title.textContent =
+          maneuver.title;
+
+        const description =
+          document.createElement("span");
+
+        description.className =
+          "practice-option-description";
+
+        description.textContent =
+          maneuver.description;
+
+        const success =
+          document.createElement("span");
+
+        success.className =
+          "practice-success";
+
+        success.textContent =
+          `Success Check: ${maneuver.success}`;
+
+        content.append(
+          title,
+          description,
+          success
+        );
+
+        label.append(
+          checkbox,
+          content
+        );
+
+        group.appendChild(label);
+      });
+
+    container.appendChild(group);
+  });
+
+  $("practiceSelectedCount").textContent =
+    `${practiceState.selected.length} selected`;
+
+  $("startPractice").disabled =
+    practiceState.selected.length === 0;
+}
+
+
+/* =========================
+   START PRACTICE
+========================= */
+
+function startPracticeFlight() {
+  if (!practiceState.selected.length) {
+    return;
+  }
+
+  const title =
+    state.info.flight ||
+    state.info.aircraft ||
+    "Practice Flight";
+
+  activePracticeId = Date.now();
+
+  practiceState.title = title;
+  practiceState.createdAt =
+    new Date().toISOString();
+
+  practiceState.checks = {};
+
+  practiceState.selected.forEach(id => {
+    practiceState.checks[id] = false;
+  });
+
+  savePracticeState();
+
+  currentMode = "practice";
+  state.mode = "practice";
+  save();
+
+  applyMode(true);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+/* =========================
+   ACTIVE PRACTICE
+========================= */
+
+function renderActivePractice() {
+  const container = $("practiceChecklist");
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!activePracticeId) {
+    return;
+  }
+
+  const selected = practiceState.selected
+    .map(id =>
+      practiceManeuvers.find(
+        maneuver => maneuver.id === id
+      )
+    )
+    .filter(Boolean);
+
+  $("practiceTitle").textContent =
+    practiceState.title ||
+    "Practice Flight";
+
+  const completed =
+    selected.filter(maneuver =>
+      practiceState.checks[maneuver.id]
+    ).length;
+
+  $("practiceSubtitle").textContent =
+    `${completed} of ${selected.length} practice maneuvers complete.`;
+
+  selected.forEach(maneuver => {
+    const card =
+      document.createElement("div");
+
+    card.className = "practice-item";
+
+    if (practiceState.checks[maneuver.id]) {
+      card.classList.add(
+        "practice-complete"
+      );
+    }
+
+    const header =
+      document.createElement("div");
+
+    header.className =
+      "practice-item-header";
+
+    const title =
+      document.createElement("h3");
+
+    title.className =
+      "practice-item-title";
+
+    title.textContent =
+      maneuver.title;
+
+    const status =
+      document.createElement("span");
+
+    status.className =
+      "practice-item-status";
+
+    if (practiceState.checks[maneuver.id]) {
+      status.classList.add("complete");
+      status.textContent = "Complete";
+    } else {
+      status.textContent = "In progress";
+    }
+
+    header.append(title, status);
+
+    const description =
+      document.createElement("p");
+
+    description.textContent =
+      maneuver.description;
+
+    const success =
+      document.createElement("p");
+
+    success.className = "success";
+
+    success.textContent =
+      `Success Check: ${maneuver.success}`;
+
+    const checkLabel =
+      document.createElement("label");
+
+    checkLabel.className =
+      "practice-check";
+
+    const checkbox =
+      document.createElement("input");
+
+    checkbox.type = "checkbox";
+
+    checkbox.checked =
+      !!practiceState.checks[
+        maneuver.id
+      ];
+
+    const checkText =
+      document.createElement("span");
+
+    checkText.textContent =
+      "Practice maneuver complete";
+
+    checkbox.onchange = () => {
+      practiceState.checks[
+        maneuver.id
+      ] = checkbox.checked;
+
+      savePracticeState();
+      renderActivePractice();
+
+      if (
+        practiceState.selected.length &&
+        practiceState.selected.every(
+          id => practiceState.checks[id]
+        )
+      ) {
+        completePracticeFlight();
+      }
+    };
+
+    checkLabel.append(
+      checkbox,
+      checkText
+    );
+
+    card.append(
+      header,
+      description,
+      success,
+      checkLabel
+    );
+
+    container.appendChild(card);
+  });
+}
+
+
+/* =========================
+   PRACTICE COMPLETION
+========================= */
+
+function completePracticeFlight() {
+  const selected =
+    practiceState.selected.length;
+
+  if (!selected) {
+    return;
+  }
+
+  const completed =
+    practiceState.selected.filter(
+      id => practiceState.checks[id]
+    ).length;
+
+  if (completed !== selected) {
+    return;
+  }
+
+  const flights =
+    getPracticeFlights();
+
+  const existing =
+    flights.find(
+      flight =>
+        flight.id === activePracticeId
+    );
+
+  if (!existing) {
+    flights.unshift({
+      id: activePracticeId,
+      title:
+        practiceState.title ||
+        "Practice Flight",
+      timestamp:
+        practiceState.createdAt ||
+        new Date().toISOString(),
+      state: JSON.parse(
+        JSON.stringify(practiceState)
+      )
+    });
+
+    if (flights.length > 10) {
+      flights.length = 10;
+    }
+
+    setPracticeFlights(flights);
+  }
+
+  renderPracticeFlights();
+
+  setTimeout(() => {
+    alert(
+      "Practice flight complete."
+    );
+  }, 100);
+}
+
+
+/* =========================
+   PRACTICE SAVED FLIGHTS
+========================= */
+
+function getPracticeFlights() {
+  try {
+    return (
+      JSON.parse(
+        localStorage.getItem(
+          practiceKey()
+        )
+      ) || []
+    );
+  } catch {
+    return [];
+  }
+}
+
+function setPracticeFlights(flights) {
+  localStorage.setItem(
+    practiceKey(),
+    JSON.stringify(flights)
+  );
+}
+
+function savePracticeCurrent() {
+  if (!practiceState.selected.length) {
+    return;
+  }
+
+  const flights =
+    getPracticeFlights();
+
+  const saved = {
+    id: Date.now(),
+    title:
+      practiceState.title ||
+      "Practice Flight",
+    timestamp:
+      new Date().toISOString(),
+    state: JSON.parse(
+      JSON.stringify(practiceState)
+    )
+  };
+
+  flights.unshift(saved);
+
+  if (flights.length > 10) {
+    flights.length = 10;
+  }
+
+  setPracticeFlights(flights);
+  renderPracticeFlights();
+}
+
+function renderPracticeFlights() {
+  const list =
+    $("practiceSavedList");
+
+  list.innerHTML = "";
+
+  const flights =
+    getPracticeFlights();
+
+  if (!flights.length) {
+    const empty =
+      document.createElement("div");
+
+    empty.className =
+      "empty-saved";
+
+    empty.textContent =
+      "No saved practice flights yet.";
+
+    list.appendChild(empty);
+
+    return;
+  }
+
+  flights.forEach(flight => {
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "saved-flight";
+
+    const info =
+      document.createElement("div");
+
+    const title =
+      document.createElement("strong");
+
+    title.textContent =
+      flight.title;
+
+    const date =
+      document.createElement("small");
+
+    try {
+      date.textContent =
+        new Date(
+          flight.timestamp
+        ).toLocaleString();
+    } catch {
+      date.textContent = "";
+    }
+
+    info.append(title, date);
+
+    const actions =
+      document.createElement("div");
+
+    actions.className =
+      "saved-actions";
+
+    const open =
+      document.createElement("button");
+
+    open.type = "button";
+    open.textContent = "Open";
+
+    open.onclick = () => {
+      practiceState =
+        JSON.parse(
+          JSON.stringify(
+            flight.state
+          )
+        );
+
+      activePracticeId =
+        flight.id;
+
+      currentMode =
+        "practice";
+
+      state.mode =
+        "practice";
+
+      save();
+      savePracticeState();
+
+      applyMode(true);
+
+      $("practiceDialog").close();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    };
+
+    const edit =
+      document.createElement("button");
+
+    edit.type = "button";
+    edit.textContent = "Edit";
+
+    edit.onclick = () => {
+      practiceState =
+        JSON.parse(
+          JSON.stringify(
+            flight.state
+          )
+        );
+
+      activePracticeId =
+        null;
+
+      currentMode =
+        "practice";
+
+      state.mode =
+        "practice";
+
+      save();
+      savePracticeState();
+
+      applyMode(true);
+
+      $("practiceDialog").close();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    };
+
+    const remove =
+      document.createElement("button");
+
+    remove.type = "button";
+    remove.className =
+      "delete-button";
+
+    remove.textContent =
+      "Delete";
+
+    remove.onclick = () => {
+      const updated =
+        getPracticeFlights()
+          .filter(
+            saved =>
+              saved.id !==
+              flight.id
+          );
+
+      setPracticeFlights(
+        updated
+      );
+
+      renderPracticeFlights();
+    };
+
+    actions.append(
+      open,
+      edit,
+      remove
+    );
+
+    row.append(
+      info,
+      actions
+    );
+
+    list.appendChild(row);
+  });
+}
+
+
+/* =========================
+   EDIT PRACTICE
+========================= */
+
+$("editPractice").onclick = () => {
+  activePracticeId = null;
+
+  currentMode =
+    "practice";
+
+  state.mode =
+    "practice";
+
+  save();
+  applyMode(true);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
+
+
+/* =========================
+   NORMAL FLIGHT COMPLETION
+========================= */
+
+function getNormalCounts() {
+  let completed = 0;
+  let skipped = 0;
+
+  Object.entries(sections).forEach(
+    ([title, items]) => {
+      items.forEach((_, index) => {
+        const id =
+          `${title}-${index}`;
+
+        if (state.checks[id]) {
+          completed++;
+        }
+
+        if (state.skipped[id]) {
+          skipped++;
+        }
+      });
+    }
+  );
+
+  return {
+    completed,
+    skipped
+  };
+}
+
+function completeNormalFlight() {
+  if (
+    currentMode === "practice" ||
+    completionSummary
+  ) {
+    return;
+  }
+
+  const counts =
+    getNormalCounts();
+
+  completionSummary = {
+    completed:
+      counts.completed,
+    skipped:
+      counts.skipped,
+    duration:
+      getFlightDuration(),
+    aircraft:
+      state.info.aircraft || "Not entered",
+    flight:
+      state.info.flight || "Not entered",
+    notes:
+      state.notes || ""
+  };
+
+  renderSummary();
+
+  $("summaryDialog").showModal();
+}
+
+function renderSummary() {
+  const summary =
+    completionSummary;
+
+  if (!summary) {
+    return;
+  }
+
+  $("summaryContent").innerHTML = "";
+
+  const completeMessage =
+    document.createElement("div");
+
+  completeMessage.className =
+    "summary-complete";
+
+  const completeStrong =
+    document.createElement("strong");
+
+  completeStrong.textContent =
+    "All main checklist items are complete.";
+
+  completeMessage.appendChild(
+    completeStrong
+  );
+
+  const grid =
+    document.createElement("div");
+
+  grid.className =
+    "summary-grid";
+
+  const rows = [
+    ["Completed", summary.completed],
+    ["Skipped", summary.skipped],
+    ["Flight time", formatDuration(summary.duration)],
+    ["Aircraft", summary.aircraft],
+    ["Flight number", summary.flight]
+  ];
+
+  rows.forEach(([label, value]) => {
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "summary-row";
+
+    const strong =
+      document.createElement("strong");
+
+    strong.textContent =
+      label;
+
+    const span =
+      document.createElement("span");
+
+    span.textContent =
+      value;
+
+    row.append(
+      strong,
+      span
+    );
+
+    grid.appendChild(row);
+  });
+
+  const notes =
+    document.createElement("div");
+
+  notes.className =
+    "summary-notes";
+
+  const notesTitle =
+    document.createElement("strong");
+
+  notesTitle.textContent =
+    "Notes";
+
+  const notesText =
+    document.createElement("p");
+
+  notesText.textContent =
+    summary.notes ||
+    "No notes entered.";
+
+  notes.append(
+    notesTitle,
+    notesText
+  );
+
+  $("summaryContent").append(
+    completeMessage,
+    grid,
+    notes
+  );
+}
+
+
+/* =========================
+   SAVED NORMAL FLIGHTS
+========================= */
+
+function getSavedFlights() {
+  try {
+    return (
+      JSON.parse(
+        localStorage.getItem(
+          savedKey()
+        )
+      ) || []
+    );
+  } catch {
+    return [];
+  }
+}
+
+function setSavedFlights(flights) {
+  localStorage.setItem(
+    savedKey(),
+    JSON.stringify(flights)
+  );
+}
+
+function saveCurrentFlight() {
+  const flights =
+    getSavedFlights();
+
+  const title =
+    state.info.flight ||
+    state.info.aircraft ||
+    state.info.server ||
+    "Untitled Flight";
+
+  const saved = {
+    id: Date.now(),
+    title,
+    timestamp:
+      new Date().toISOString(),
+    state: JSON.parse(
+      JSON.stringify(state)
+    )
+  };
+
+  flights.unshift(saved);
+
+  if (flights.length > 30) {
+    flights.length = 30;
+  }
+
+  setSavedFlights(flights);
+
+  const button =
+    $("saveFlight");
+
+  const original =
+    button.textContent;
+
+  button.textContent =
+    "Flight Saved";
+
+  setTimeout(() => {
+    button.textContent =
+      original;
+  }, 1500);
+}
+
+function saveCompletedSummary() {
+  if (!completionSummary) {
+    return;
+  }
+
+  saveCurrentFlight();
+
+  const button =
+    $("saveSummary");
+
+  const original =
+    button.textContent;
+
+  button.textContent =
+    "Summary Saved";
+
+  setTimeout(() => {
+    button.textContent =
+      original;
+  }, 1500);
+}
+
+function renderSavedFlights() {
+  const list =
+    $("savedList");
+
+  const flights =
+    getSavedFlights();
+
+  list.innerHTML = "";
+
+  if (!flights.length) {
+    const empty =
+      document.createElement("div");
+
+    empty.className =
+      "empty-saved";
+
+    empty.textContent =
+      "No saved flights yet.";
+
+    list.appendChild(empty);
+
+    return;
+  }
+
+  flights.forEach(flight => {
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "saved-flight";
+
+    const info =
+      document.createElement("div");
+
+    const title =
+      document.createElement("strong");
+
+    title.textContent =
+      flight.title;
+
+    const date =
+      document.createElement("small");
+
+    try {
+      date.textContent =
+        new Date(
+          flight.timestamp
+        ).toLocaleString();
+    } catch {
+      date.textContent = "";
+    }
+
+    info.append(
+      title,
+      date
+    );
+
+    const actions =
+      document.createElement("div");
+
+    actions.className =
+      "saved-actions";
+
+    const open =
+      document.createElement("button");
+
+    open.type = "button";
+    open.textContent =
+      "Open";
+
+    open.onclick = () => {
+      state =
+        JSON.parse(
+          JSON.stringify(
+            flight.state
+          )
+        );
+
+      currentMode =
+        state.mode ||
+        "full";
+
+      completionSummary =
+        null;
+
+      flightStartedAt =
+        Date.now();
+
+      save();
+      applyMode(true);
+
+      $("savedDialog").close();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    };
+
+    const remove =
+      document.createElement("button");
+
+    remove.type = "button";
+    remove.className =
+      "delete-button";
+
+    remove.textContent =
+      "Delete";
+
+    remove.onclick = () => {
+      const updated =
+        getSavedFlights()
+          .filter(
+            saved =>
+              saved.id !==
+              flight.id
+          );
+
+      setSavedFlights(
+        updated
+      );
+
+      renderSavedFlights();
+    };
+
+    actions.append(
+      open,
+      remove
+    );
+
+    row.append(
+      info,
+      actions
+    );
+
+    list.appendChild(row);
+  });
+}
+
+
+/* =========================
+   AUTH
+========================= */
 
 async function startUser(u) {
   user = u;
   guest = false;
 
-  $("account").textContent = u.email || "Account";
+  $("account").textContent =
+    u.email || "Account";
 
   app();
 }
@@ -476,379 +1801,460 @@ async function startGuest() {
 
   setGuest();
 
-  $("account").textContent = "Guest";
+  $("account").textContent =
+    "Guest";
 
   app();
 }
 
-function getSavedFlights() {
-  try {
-    return JSON.parse(localStorage.getItem(savedKey())) || [];
-  } catch {
-    return [];
-  }
-}
+$("login").onsubmit =
+  async event => {
+    event.preventDefault();
 
-function setSavedFlights(flights) {
-  localStorage.setItem(savedKey(), JSON.stringify(flights));
-}
-
-function saveCurrentFlight() {
-  const flights = getSavedFlights();
-
-  const title =
-    state.info.flight ||
-    state.info.aircraft ||
-    state.info.server ||
-    "Untitled Flight";
-
-  const saved = {
-    id: Date.now(),
-    title,
-    timestamp: new Date().toISOString(),
-    state: JSON.parse(JSON.stringify(state))
-  };
-
-  flights.unshift(saved);
-
-  if (flights.length > 30) {
-    flights.length = 30;
-  }
-
-  setSavedFlights(flights);
-
-  const button = $("saveFlight");
-  const original = button.textContent;
-
-  button.textContent = "Flight Saved";
-
-  setTimeout(() => {
-    button.textContent = original;
-  }, 1500);
-}
-
-function renderSavedFlights() {
-  const list = $("savedList");
-  const flights = getSavedFlights();
-
-  list.innerHTML = "";
-
-  if (!flights.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-saved";
-    empty.textContent = "No saved flights yet.";
-    list.appendChild(empty);
-    return;
-  }
-
-  flights.forEach(flight => {
-    const row = document.createElement("div");
-    row.className = "saved-flight";
-
-    const info = document.createElement("div");
-
-    const title = document.createElement("strong");
-    title.textContent = flight.title;
-
-    const date = document.createElement("small");
-
-    try {
-      date.textContent = new Date(
-        flight.timestamp
-      ).toLocaleString();
-    } catch {
-      date.textContent = "";
+    if (!sb) {
+      return msg(
+        "message",
+        "Add your Supabase publishable key in config.js first."
+      );
     }
 
-    info.append(title, date);
+    msg(
+      "message",
+      "Logging in..."
+    );
 
-    const actions = document.createElement("div");
-    actions.className = "saved-actions";
-
-    const open = document.createElement("button");
-    open.type = "button";
-    open.textContent = "Open";
-
-    open.onclick = () => {
-      state = JSON.parse(JSON.stringify(flight.state));
-
-      save();
-      render();
-
-      $("savedDialog").close();
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+    const { error } =
+      await sb.auth.signInWithPassword({
+        email:
+          $("email").value.trim(),
+        password:
+          $("password").value
       });
-    };
 
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "delete-button";
-    remove.textContent = "Delete";
+    if (error) {
+      msg(
+        "message",
+        error.message
+      );
+    }
+  };
 
-    remove.onclick = () => {
-      const updated = getSavedFlights().filter(
-        saved => saved.id !== flight.id
+$("register").onclick =
+  () => {
+    screens(
+      "registerScreen"
+    );
+  };
+
+$("forgot").onclick =
+  () => {
+    screens(
+      "forgotScreen"
+    );
+  };
+
+$("guest").onclick =
+  startGuest;
+
+$("backRegister").onclick =
+  () => {
+    screens("auth");
+  };
+
+$("backForgot").onclick =
+  () => {
+    screens("auth");
+  };
+
+$("registerForm").onsubmit =
+  async event => {
+    event.preventDefault();
+
+    if (!sb) {
+      return msg(
+        "registerMessage",
+        "Supabase is not configured yet."
+      );
+    }
+
+    if (
+      $("regPassword").value !==
+      $("regConfirm").value
+    ) {
+      return msg(
+        "registerMessage",
+        "Passwords do not match."
+      );
+    }
+
+    const {
+      data,
+      error
+    } =
+      await sb.auth.signUp({
+        email:
+          $("regEmail").value.trim(),
+        password:
+          $("regPassword").value,
+        options: {
+          emailRedirectTo:
+            location.origin +
+            location.pathname
+        }
+      });
+
+    if (error) {
+      return msg(
+        "registerMessage",
+        error.message
+      );
+    }
+
+    if (data.session) {
+      startUser(
+        data.session.user
+      );
+    } else {
+      msg(
+        "registerMessage",
+        "Account created. Check your email to confirm your account."
+      );
+    }
+  };
+
+$("forgotForm").onsubmit =
+  async event => {
+    event.preventDefault();
+
+    if (!sb) {
+      return msg(
+        "forgotMessage",
+        "Supabase is not configured yet."
+      );
+    }
+
+    const {
+      error
+    } =
+      await sb.auth.resetPasswordForEmail(
+        $("forgotEmail").value.trim(),
+        {
+          redirectTo:
+            location.origin +
+            location.pathname
+        }
       );
 
-      setSavedFlights(updated);
-      renderSavedFlights();
-    };
-
-    actions.append(open, remove);
-    row.append(info, actions);
-
-    list.appendChild(row);
-  });
-}
-
-$("login").onsubmit = async event => {
-  event.preventDefault();
-
-  if (!sb) {
-    return msg(
-      "message",
-      "Add your Supabase publishable key in config.js first."
-    );
-  }
-
-  msg("message", "Logging in...");
-
-  const {
-    error
-  } = await sb.auth.signInWithPassword({
-    email: $("email").value.trim(),
-    password: $("password").value
-  });
-
-  if (error) {
-    msg("message", error.message);
-  }
-};
-
-$("register").onclick = () => {
-  screens("registerScreen");
-};
-
-$("forgot").onclick = () => {
-  screens("forgotScreen");
-};
-
-$("guest").onclick = startGuest;
-
-$("backRegister").onclick = () => {
-  screens("auth");
-};
-
-$("backForgot").onclick = () => {
-  screens("auth");
-};
-
-$("registerForm").onsubmit = async event => {
-  event.preventDefault();
-
-  if (!sb) {
-    return msg(
-      "registerMessage",
-      "Supabase is not configured yet."
-    );
-  }
-
-  if ($("regPassword").value !== $("regConfirm").value) {
-    return msg(
-      "registerMessage",
-      "Passwords do not match."
-    );
-  }
-
-  const {
-    data,
-    error
-  } = await sb.auth.signUp({
-    email: $("regEmail").value.trim(),
-    password: $("regPassword").value,
-    options: {
-      emailRedirectTo:
-        location.origin + location.pathname
-    }
-  });
-
-  if (error) {
-    return msg("registerMessage", error.message);
-  }
-
-  if (data.session) {
-    startUser(data.session.user);
-  } else {
     msg(
-      "registerMessage",
-      "Account created. Check your email to confirm your account."
-    );
-  }
-};
-
-$("forgotForm").onsubmit = async event => {
-  event.preventDefault();
-
-  if (!sb) {
-    return msg(
       "forgotMessage",
-      "Supabase is not configured yet."
+      error
+        ? error.message
+        : "Reset email sent. Check your inbox."
     );
-  }
+  };
 
-  const {
-    error
-  } = await sb.auth.resetPasswordForEmail(
-    $("forgotEmail").value.trim(),
-    {
-      redirectTo:
-        location.origin + location.pathname
+$("recoveryForm").onsubmit =
+  async event => {
+    event.preventDefault();
+
+    if (!sb) {
+      return;
     }
-  );
 
-  msg(
-    "forgotMessage",
-    error
-      ? error.message
-      : "Reset email sent. Check your inbox."
-  );
-};
+    if (
+      $("newPassword").value !==
+      $("newConfirm").value
+    ) {
+      return msg(
+        "recoveryMessage",
+        "Passwords do not match."
+      );
+    }
 
-$("recoveryForm").onsubmit = async event => {
-  event.preventDefault();
+    const { error } =
+      await sb.auth.updateUser({
+        password:
+          $("newPassword").value
+      });
 
-  if (!sb) {
-    return;
-  }
+    if (error) {
+      return msg(
+        "recoveryMessage",
+        error.message
+      );
+    }
 
-  if ($("newPassword").value !== $("newConfirm").value) {
-    return msg(
+    msg(
       "recoveryMessage",
-      "Passwords do not match."
+      "Password updated."
     );
-  }
 
-  const {
-    error
-  } = await sb.auth.updateUser({
-    password: $("newPassword").value
-  });
+    setTimeout(
+      () => app(),
+      700
+    );
+  };
 
-  if (error) {
-    return msg("recoveryMessage", error.message);
-  }
 
-  msg(
-    "recoveryMessage",
-    "Password updated."
-  );
+/* =========================
+   MODE BUTTONS
+========================= */
 
-  setTimeout(() => app(), 700);
-};
+$("quickMode").onclick =
+  () => setMode("quick");
 
-$("advanced").onclick = () => {
-  advancedOpen = !advancedOpen;
+$("fullMode").onclick =
+  () => setMode("full");
 
-  $("advancedPanel").classList.toggle(
-    "hidden",
-    !advancedOpen
-  );
+$("practiceMode").onclick =
+  () => setMode("practice");
 
-  $("advanced").textContent = advancedOpen
-    ? "Hide Advanced"
-    : "Advanced";
+$("flightModeButton").onclick =
+  () => {
+    $("quickMode").focus();
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
 
-  progress();
-};
 
-$("notesToggle").onclick = () => {
-  $("notesPage").classList.toggle("hidden");
+/* =========================
+   ADVANCED
+========================= */
 
-  $("notesToggle").textContent =
-    $("notesPage").classList.contains("hidden")
-      ? "Notes"
-      : "Hide Notes";
-};
+$("advanced").onclick =
+  () => {
+    advancedOpen =
+      !advancedOpen;
 
-$("notes").oninput = () => {
-  state.notes = $("notes").value;
-  save();
-};
+    $("advancedPanel")
+      .classList.toggle(
+        "hidden",
+        !advancedOpen
+      );
 
-$("savedFlights").onclick = () => {
-  renderSavedFlights();
-  $("savedDialog").showModal();
-};
+    $("advanced").textContent =
+      advancedOpen
+        ? "Hide Advanced"
+        : "Advanced";
 
-$("closeSaved").onclick = () => {
-  $("savedDialog").close();
-};
+    progress();
+  };
 
-$("saveFlight").onclick = saveCurrentFlight;
 
-$("logout").onclick = async () => {
-  if (sb) {
-    await sb.auth.signOut();
-  }
+/* =========================
+   NOTES
+========================= */
 
-  user = null;
-  guest = false;
+$("notesToggle").onclick =
+  () => {
+    notesOpen =
+      !notesOpen;
 
-  $("app").classList.add("hidden");
+    $("notesPage")
+      .classList.toggle(
+        "hidden",
+        !notesOpen
+      );
 
-  screens("auth");
-};
+    $("notesToggle").textContent =
+      notesOpen
+        ? "Hide Notes"
+        : "Notes";
+  };
 
-["aircraft", "flight", "server", "gate", "date"].forEach(id => {
-  $(id).oninput = () => {
-    state.info[id] = $(id).value;
+$("notes").oninput =
+  () => {
+    state.notes =
+      $("notes").value;
+
     save();
   };
-});
 
-$("reset").onclick = () => {
-  $("dialog").showModal();
-};
 
-$("cancel").onclick = () => {
-  $("dialog").close();
-};
+/* =========================
+   SAVED FLIGHTS
+========================= */
 
-$("confirm").onclick = () => {
-  state = {
-    checks: {},
-    skipped: {},
-    advanced: {},
-    info: {},
-    notes: ""
+$("savedFlights").onclick =
+  () => {
+    renderSavedFlights();
+
+    $("savedDialog")
+      .showModal();
   };
 
-  save();
-  render();
+$("closeSaved").onclick =
+  () => {
+    $("savedDialog")
+      .close();
+  };
 
-  advancedOpen = false;
+$("saveFlight").onclick =
+  saveCurrentFlight;
 
-  $("advancedPanel").classList.add(
-    "hidden"
-  );
 
-  $("advanced").textContent = "Advanced";
+/* =========================
+   PRACTICE FLIGHTS
+========================= */
 
-  $("notesPage").classList.add("hidden");
-  $("notesToggle").textContent = "Notes";
+$("practiceFlights").onclick =
+  () => {
+    renderPracticeFlights();
 
-  $("dialog").close();
+    $("practiceDialog")
+      .showModal();
+  };
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-};
+$("closePracticeDialog").onclick =
+  () => {
+    $("practiceDialog")
+      .close();
+  };
+
+$("startPractice").onclick =
+  startPracticeFlight;
+
+
+/* =========================
+   SUMMARY
+========================= */
+
+$("saveSummary").onclick =
+  saveCompletedSummary;
+
+$("closeSummary").onclick =
+  () => {
+    $("summaryDialog")
+      .close();
+  };
+
+$("finishSummary").onclick =
+  () => {
+    $("summaryDialog")
+      .close();
+  };
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+$("logout").onclick =
+  async () => {
+    if (sb) {
+      await sb.auth.signOut();
+    }
+
+    user = null;
+    guest = false;
+
+    $("app")
+      .classList.add("hidden");
+
+    screens("auth");
+  };
+
+
+/* =========================
+   FLIGHT INFORMATION
+========================= */
+
+[
+  "aircraft",
+  "flight",
+  "server",
+  "gate",
+  "date"
+].forEach(id => {
+  $(id).oninput =
+    () => {
+      state.info[id] =
+        $(id).value;
+
+      save();
+    };
+});
+
+
+/* =========================
+   RESET
+========================= */
+
+$("endFlight").onclick =
+  () => {
+    $("dialog")
+      .showModal();
+  };
+
+$("cancel").onclick =
+  () => {
+    $("dialog")
+      .close();
+  };
+
+$("confirm").onclick =
+  () => {
+    state = {
+      checks: {},
+      skipped: {},
+      advanced: {},
+      info: {},
+      notes: "",
+      mode: currentMode
+    };
+
+    practiceState = {
+      selected: [],
+      checks: {},
+      info: {},
+      notes: "",
+      title: "Practice Flight",
+      createdAt: null
+    };
+
+    activePracticeId = null;
+    completionSummary = null;
+    flightStartedAt = Date.now();
+
+    save();
+    savePracticeState();
+
+    advancedOpen = false;
+    notesOpen = false;
+
+    $("advancedPanel")
+      .classList.add("hidden");
+
+    $("advanced").textContent =
+      "Advanced";
+
+    $("notesPage")
+      .classList.add("hidden");
+
+    $("notesToggle").textContent =
+      "Notes";
+
+    $("dialog")
+      .close();
+
+    applyMode(true);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
+
+
+/* =========================
+   INITIALISE
+========================= */
 
 async function init() {
+  flightStartedAt = Date.now();
+
   if (!sb) {
     msg(
       "message",
@@ -862,11 +2268,16 @@ async function init() {
     data: {
       session
     }
-  } = await sb.auth.getSession();
+  } =
+    await sb.auth.getSession();
 
   if (session?.user) {
-    startUser(session.user);
-  } else if (guestCookie()) {
+    startUser(
+      session.user
+    );
+  } else if (
+    guestCookie()
+  ) {
     startGuest();
   } else {
     screens("auth");
@@ -874,10 +2285,19 @@ async function init() {
 
   sb.auth.onAuthStateChange(
     (event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        screens("recoveryScreen");
-      } else if (session?.user) {
-        startUser(session.user);
+      if (
+        event ===
+        "PASSWORD_RECOVERY"
+      ) {
+        screens(
+          "recoveryScreen"
+        );
+      } else if (
+        session?.user
+      ) {
+        startUser(
+          session.user
+        );
       }
     }
   );
