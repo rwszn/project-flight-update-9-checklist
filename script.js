@@ -345,11 +345,11 @@ function updateFlightTimer() {
 
 function updateStartFlightButtons() {
   const active = Boolean(flightStartedAt) && !state.finishedAt;
-  const buttons = [$("startFlight"), $("timerStartFlight")].filter(Boolean);
+  const buttons = [$("startFlight")].filter(Boolean);
 
   buttons.forEach(button => {
     button.textContent = active ? "Flight Started" : "Start Flight";
-    button.disabled = active || Boolean(state.finishedAt);
+    button.disabled = currentMode === "practice" || active || Boolean(state.finishedAt);
   });
 }
 
@@ -2583,7 +2583,6 @@ $("menuAdvanced").onclick =
   };
 
 $("startFlight").onclick = startFlight;
-$("timerStartFlight").onclick = startFlight;
 
 $("savedFlights").onclick =
   () => {
