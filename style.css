@@ -943,3 +943,59 @@ dialog p {
     align-self: flex-start;
   }
 }
+
+
+.flight-timer-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.flight-timer-label {
+  color: #8996a3;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+#flightTimer {
+  color: #d7a83b;
+  font-size: 24px;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.stats-card {
+  background: #0e141b;
+  border: 1px solid #202a34;
+  padding: 16px;
+}
+
+.stats-card strong {
+  display: block;
+  color: #8996a3;
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+
+.stats-card span {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #flightTimer {
+    font-size: 21px;
+  }
+}
