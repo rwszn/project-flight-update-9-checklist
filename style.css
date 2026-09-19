@@ -1163,3 +1163,12 @@ dialog p {
     padding: 13px;
   }
 }
+
+
+.registration-policy-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 6px;
+  font-size: 13px;
+}
